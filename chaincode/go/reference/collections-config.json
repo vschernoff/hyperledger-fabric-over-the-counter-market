@@ -1,0 +1,21 @@
+[
+    {
+        "name": "a-b",
+        "policy": "OR('aMSP.member', 'bMSP.member')",
+        "requiredPeerCount": 1,
+        "maxPeerCount": 1,
+        "blockToLive": 0
+    }, {
+        "name": "a-c",
+        "policy": "OR('aMSP.member', 'cMSP.member')",
+        "requiredPeerCount": 1,
+        "maxPeerCount": 1,
+        "blockToLive": 0
+    }, {
+        "name": "b-c",
+        "policy": "OR('bMSP.member', 'cMSP.member')",
+        "requiredPeerCount": 1,
+        "maxPeerCount": 1,
+        "blockToLive": 0
+    }
+]
