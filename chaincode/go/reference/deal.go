@@ -144,14 +144,7 @@ func (deal *Deal) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
 		return err
 	}
 
-	var collection string
-	if strings.Compare(deal.Value.Borrower, deal.Value.Lender) < 0 {
-		collection = fmt.Sprintf("%s-%s", deal.Value.Borrower, deal.Value.Lender)
-	} else {
-		collection = fmt.Sprintf("%s-%s", deal.Value.Lender, deal.Value.Borrower)
-	}
-
-	if err = stub.PutPrivateData(collection, compositeKey, value); err != nil {
+	if err = stub.PutState(compositeKey, value); err != nil {
 		return err
 	}
 

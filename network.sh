@@ -45,7 +45,6 @@ CHAINCODE_BILATERAL_NAME=relationship
 CHAINCODE_COMMON_INIT='{"Args":["init","a","100","b","100"]}'
 CHAINCODE_BILATERAL_INIT='{"Args":["init","a","100","b","100"]}'
 # TODO: evaluate dynamically
-CHAINCODE_COMMON_COLLECTIONS_CONFIG=/opt/gopath/src/reference/collections-config.json
 
 DEFAULT_ORDERER_PORT=7050
 DEFAULT_WWW_PORT=8080
@@ -459,11 +458,6 @@ function instantiateChaincode () {
         info "instantiating chaincode $n on $channel_name by $org using $f with $i"
 
         c="CORE_PEER_ADDRESS=peer0.$org.$DOMAIN:7051 peer chaincode instantiate -n $n -v ${CHAINCODE_VERSION} -c '$i' -o orderer.$DOMAIN:7050 -C $channel_name --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
-
-        # TODO: fix path to config file
-        if [ "$n" == "$CHAINCODE_COMMON_NAME" ]; then
-            c="$c --collections-config $CHAINCODE_COMMON_COLLECTIONS_CONFIG"
-        fi
 
         d="cli.$org.$DOMAIN"
 
