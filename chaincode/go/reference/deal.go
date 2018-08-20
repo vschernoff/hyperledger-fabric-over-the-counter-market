@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/satori/go.uuid"
-	"strings"
 )
 
 const (
