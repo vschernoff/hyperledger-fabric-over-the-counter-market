@@ -1,7 +1,7 @@
 node_modules
 npm-debug.log
 .idea
-artifacts
+artifacts/*
 fabric-rest-api.iml
 fabric-rest-api.ipr
 fabric-rest-api.iws
