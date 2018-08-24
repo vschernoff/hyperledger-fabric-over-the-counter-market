@@ -31,6 +31,8 @@ func (t *MarketChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	if function == "placeBid" {
 		// place a bid on the market
 		return t.placeBid(stub, args)
+	} else if function == "editBid" {
+		return t.editBid(stub, args)
 	} else if function == "cancelBid" {
 		return t.cancelBid(stub, args)
 	} else if function == "makeDeal" {
@@ -89,6 +91,81 @@ func (t *MarketChaincode) placeBid(stub shim.ChaincodeStubInterface, args []stri
 
 	logger.Info("MarketChaincode.placeBid exited without errors")
 	logger.Debug("Success: MarketChaincode.placeBid")
+	return shim.Success(nil)
+}
+
+func (t *MarketChaincode) editBid(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	logger.Info("MarketChaincode.editBid is running")
+	logger.Debug("MarketChaincode.editBid")
+
+	if len(args) < bidBasicArgumentsNumber + bidKeyFieldsNumber {
+		message := fmt.Sprintf("insufficient number of arguments: expected %d, got %d",
+			bidBasicArgumentsNumber + bidKeyFieldsNumber, len(args))
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	var bid, bidToUpdate Bid
+	if err := bid.FillFromCompositeKeyParts(args[:1]); err != nil {
+        message := fmt.Sprintf("cannot fill a bid from arguments: %s", err.Error())
+        logger.Error(message)
+        return shim.Error(message)
+    }
+    bidToUpdate.Key.ID = bid.Key.ID
+	if err := bid.FillFromArguments(args[1:]); err != nil {
+		message := fmt.Sprintf("cannot fill a bid from arguments: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("Bid to edit: " + bid.Key.ID)
+
+	if !bidToUpdate.ExistsIn(stub) {
+		message := fmt.Sprintf("bid with ID %s not found", bid.Key.ID)
+		logger.Error(message)
+		return pb.Response{Status: 404, Message: message}
+	}
+
+	if err := bidToUpdate.LoadFrom(stub); err != nil {
+		message := fmt.Sprintf("cannot load existing bid: %s", err.Error())
+		logger.Error(message)
+		return pb.Response{Status: 404, Message: message}
+	}
+
+	creator, err := GetCreatorOrganization(stub)
+	if err != nil {
+		message := fmt.Sprintf("cannot obtain creator's name from the certificate: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	if bidToUpdate.Value.Creator != creator {
+		message := "unable to edit a bid owned by not the creator"
+		logger.Error(message)
+		return pb.Response{Status: 403, Message: message}
+	}
+
+	if bidToUpdate.Value.Status != statusActive {
+		message := fmt.Sprintf("unable to edit the bid: bid status is not Active")
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	bidToUpdate.Value.Amount = bid.Value.Amount
+	bidToUpdate.Value.Rate = bid.Value.Rate
+
+    if bytes, err := json.Marshal(bidToUpdate); err == nil {
+        logger.Debug("Bid: " + string(bytes))
+    }
+
+	if err := bidToUpdate.UpdateOrInsertIn(stub); err != nil {
+		message := fmt.Sprintf("persistence error: %s", err.Error())
+		logger.Error(message)
+		return pb.Response{Status: 500, Message: message}
+	}
+
+	logger.Info("MarketChaincode.editBid exited without errors")
+	logger.Debug("Success: MarketChaincode.editBid")
 	return shim.Success(nil)
 }
 
