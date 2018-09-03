@@ -12,7 +12,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"strconv"
-	"errors"
 )
 
 var logger = shim.NewLogger("MarketChaincode")
