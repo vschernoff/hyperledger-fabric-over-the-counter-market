@@ -11,6 +11,8 @@ import (
 	"encoding/pem"
 	"crypto/x509"
 	"encoding/json"
+	"strconv"
+	"errors"
 )
 
 var logger = shim.NewLogger("MarketChaincode")
@@ -39,8 +41,12 @@ func (t *MarketChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.makeDeal(stub, args)
 	} else if function == "queryBids" {
 		return t.queryBids(stub, args)
+	} else if function == "queryBidsCreator" {
+		return t.queryBidsCreator(stub, args)
 	} else if function == "queryDeals" {
 		return t.queryDeals(stub, args)
+	} else if function == "queryDealsCreatorByTime" {
+		return t.queryDealsCreatorByTime(stub, args)
 	}
 
 	return pb.Response{Status:403, Message:"Invalid invoke function name."}
@@ -394,6 +400,79 @@ func (t *MarketChaincode) queryBids(stub shim.ChaincodeStubInterface, args []str
 	return shim.Success(result)
 }
 
+func (t *MarketChaincode) queryBidsCreator(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	logger.Info("MarketChaincode.queryBidsCreator is running")
+	logger.Debug("MarketChaincode.queryBidsCreator")
+
+	creator, err := GetCreatorOrganization(stub)
+	if err != nil {
+		message := fmt.Sprintf("cannot obtain creator's name from the certificate: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("Creator: " + creator)
+
+	it, err := stub.GetStateByPartialCompositeKey(bidIndex, []string{})
+	if err != nil {
+		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", bidIndex, err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+	defer it.Close()
+
+	entries := []Bid{}
+	for it.HasNext() {
+		response, err := it.Next()
+		if err != nil {
+			message := fmt.Sprintf("unable to get an element next to a queryBidsCreator iterator: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
+
+		entry := Bid{}
+
+		if err := entry.FillFromLedgerValue(response.Value); err != nil {
+			message := fmt.Sprintf("cannot fill bid value from response value: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		_, compositeKeyParts, err := stub.SplitCompositeKey(response.Key)
+		if err != nil {
+			message := fmt.Sprintf("cannot split response key into composite key parts slice: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		if err := entry.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
+			message := fmt.Sprintf("cannot fill bid key from composite key parts: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		if bytes, err := json.Marshal(entry); err == nil {
+			logger.Debug("Entry: " + string(bytes))
+		}
+
+		if creator == entry.Value.Creator {
+			entries = append(entries, entry)
+		}
+	}
+
+	result, err := json.Marshal(entries)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	logger.Debug("Result: " + string(result))
+
+	logger.Info("MarketChaincode.queryBidsCreator exited without errors")
+	logger.Debug("Success: MarketChaincode.queryBidsCreator")
+	return shim.Success(result)
+}
+
 func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	logger.Info("MarketChaincode.queryDeals is running")
 	logger.Debug("MarketChaincode.queryDeals")
@@ -453,6 +532,100 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 
 	logger.Info("MarketChaincode.queryDeals exited without errors")
 	logger.Debug("Success: MarketChaincode.queryDeals")
+	return shim.Success(result)
+}
+
+
+func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	logger.Info("MarketChaincode.queryDealsCreatorByTime is running")
+	logger.Debug("MarketChaincode.queryDealsCreatorByTime")
+
+	if len(args) < dealBasicArgumentsNumber + dealKeyFieldsNumber {
+		message := fmt.Sprintf("insufficient number of arguments: expected %d, got %d",
+			dealBasicArgumentsNumber + dealKeyFieldsNumber, len(args))
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	deal := DealArgs{}
+	if err := deal.FillFromArguments(args); err != nil {
+		message := fmt.Sprintf("cannot fill a deal from arguments: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("TimePeriodFrom: " + strconv.FormatInt(deal.timePeriodFrom,10))
+	logger.Debug("TimePeriodTo: " + strconv.FormatInt(deal.timePeriodTo,10))
+
+	creator, err := GetCreatorOrganization(stub)
+	if err != nil {
+		message := fmt.Sprintf("cannot obtain creator's name from the certificate: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("Creator: " + creator)
+
+	it, err := stub.GetStateByPartialCompositeKey(dealIndex, []string{})
+	if err != nil {
+		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", dealIndex, err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+	defer it.Close()
+
+	entries := []Deal{}
+	for it.HasNext() {
+		response, err := it.Next()
+		if err != nil {
+			message := fmt.Sprintf("unable to get an element next to a query iterator: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
+
+		entry := Deal{}
+
+		if err := entry.FillFromLedgerValue(response.Value); err != nil {
+			message := fmt.Sprintf("cannot fill deal value from response value: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		_, compositeKeyParts, err := stub.SplitCompositeKey(response.Key)
+		if err != nil {
+			message := fmt.Sprintf("cannot split response key into composite key parts slice: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		if err := entry.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
+			message := fmt.Sprintf("cannot fill deal key from composite key parts: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		if (creator == entry.Value.Borrower || creator == entry.Value.Lender) && deal.timePeriodFrom <= entry.Value.Timestamp &&
+			deal.timePeriodTo >= entry.Value.Timestamp{
+			entries = append(entries, entry)
+		}
+
+		if bytes, err := json.Marshal(entry); err == nil {
+			logger.Debug("Entry: " + string(bytes))
+		}
+
+		entries = append(entries, entry)
+	}
+
+	result, err := json.Marshal(entries)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	logger.Debug("Result: " + string(result))
+
+	logger.Info("MarketChaincode.queryDealsCreatorByTime exited without errors")
+	logger.Debug("Success: MarketChaincode.queryDealsCreatorByTime")
 	return shim.Success(result)
 }
 

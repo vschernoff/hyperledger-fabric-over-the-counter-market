@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/satori/go.uuid"
+	"strconv"
 )
 
 const (
@@ -29,16 +30,48 @@ type DealValue struct {
 	Timestamp int64   `json:"timestamp"`
 }
 
+type DealArgs struct {
+	timePeriodFrom int64   `json:"timestamp"`
+	timePeriodTo int64     `json:"timestamp"`
+}
+
 type Deal struct {
 	Key   DealKey   `json:"key"`
 	Value DealValue `json:"value"`
 }
 
-func (deal *Deal) FillFromArguments(args []string) error {
-	//if len(args) < dealBasicArgumentsNumber {
-	//	return errors.New(fmt.Sprintf("arguments array must contain at least %d items", dealBasicArgumentsNumber))
-	//}
-	//
+func (deal *DealArgs) FillFromArguments(args []string) error {
+	//0		1			2				3
+	//Key	Value		timePeriodFrom  timePeriodTo
+	if len(args) < dealBasicArgumentsNumber {
+		return errors.New(fmt.Sprintf("arguments array must contain at least %d items", dealBasicArgumentsNumber))
+	}
+
+	timePeriodFrom, err := strconv.ParseInt(args[2],10, 64)
+	if err != nil {
+		return errors.New(fmt.Sprintf("unable to parse the timePeriodFrom: %s", err.Error()))
+	}
+
+	if timePeriodFrom < 0 {
+		return errors.New("timePeriodFrom must be larger than zero")
+	}
+
+	timePeriodTo, err := strconv.ParseInt(args[3],10, 64)
+	if err != nil {
+		return errors.New(fmt.Sprintf("unable to parse the timePeriodTo: %s", err.Error()))
+	}
+
+	if timePeriodTo < 0 {
+		return errors.New("timePeriodTo must be larger than zero")
+	}
+
+	if timePeriodTo < timePeriodFrom {
+		return errors.New("timePeriodTo must be larger than timePeriodFrom")
+	}
+
+	deal.timePeriodFrom = int64(timePeriodFrom)
+	deal.timePeriodTo 	= int64(timePeriodTo)
+
 	//dealType, err := strconv.Atoi(args[0])
 	//if err != nil {
 	//	return errors.New(fmt.Sprintf("unable to parse deal type: %s", err.Error()))
@@ -47,7 +80,7 @@ func (deal *Deal) FillFromArguments(args []string) error {
 	//	return errors.New(fmt.Sprintf("unsupported type of a deal: %d", dealType))
 	//}
 	//deal.Value.Type = dealType
-	//
+
 	//amount, err := strconv.ParseFloat(args[1], 32)
 	//if err != nil {
 	//	return errors.New(fmt.Sprintf("unable to parse the amount: %s", err.Error()))
