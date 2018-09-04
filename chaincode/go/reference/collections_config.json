@@ -1,0 +1,31 @@
+[
+	{
+		"name": "collectionDeals",
+		"policy": "OR('aMSP.member', 'bMSP.member', 'cMSP.member')",
+		"requiredPeerCount": 0,
+		"maxPeerCount": 3,
+		"blockToLive":1000000
+	},
+	{
+		"name": "abDeals",
+		"policy": "OR('aMSP.member', 'bMSP.member')",
+		"requiredPeerCount": 0,
+		"maxPeerCount": 3,
+		"blockToLive":3
+	},
+	{
+		"name": "acDeals",
+		"policy": "OR('aMSP.member','cMSP.member')",
+		"requiredPeerCount": 0,
+		"maxPeerCount": 3,
+		"blockToLive":3
+	},
+	{
+		"name": "bcDeals",
+		"policy": "OR('bMSP.member', 'cMSP.member')",
+		"requiredPeerCount": 0,
+		"maxPeerCount": 3,
+		"blockToLive":3
+	}
+
+]

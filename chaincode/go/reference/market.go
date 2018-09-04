@@ -547,7 +547,7 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 	}
 
 	deal := DealArgs{}
-	if err := deal.FillFromArguments(args); err != nil {
+	if err := deal.FillFromArguments(args[1:]); err != nil {
 		message := fmt.Sprintf("cannot fill a deal from arguments: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
@@ -614,7 +614,6 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 			logger.Debug("Entry: " + string(bytes))
 		}
 
-		entries = append(entries, entry)
 	}
 
 	result, err := json.Marshal(entries)

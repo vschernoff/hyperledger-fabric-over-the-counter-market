@@ -41,13 +41,13 @@ type Deal struct {
 }
 
 func (deal *DealArgs) FillFromArguments(args []string) error {
-	//0		1			2				3
-	//Key	Value		timePeriodFrom  timePeriodTo
+	//0				  1				  2
+	//Value			  timePeriodFrom  timePeriodTo
 	if len(args) < dealBasicArgumentsNumber {
 		return errors.New(fmt.Sprintf("arguments array must contain at least %d items", dealBasicArgumentsNumber))
 	}
 
-	timePeriodFrom, err := strconv.ParseInt(args[2],10, 64)
+	timePeriodFrom, err := strconv.ParseInt(args[1],10, 64)
 	if err != nil {
 		return errors.New(fmt.Sprintf("unable to parse the timePeriodFrom: %s", err.Error()))
 	}
@@ -56,7 +56,7 @@ func (deal *DealArgs) FillFromArguments(args []string) error {
 		return errors.New("timePeriodFrom must be larger than zero")
 	}
 
-	timePeriodTo, err := strconv.ParseInt(args[3],10, 64)
+	timePeriodTo, err := strconv.ParseInt(args[2],10, 64)
 	if err != nil {
 		return errors.New(fmt.Sprintf("unable to parse the timePeriodTo: %s", err.Error()))
 	}
