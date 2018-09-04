@@ -614,7 +614,6 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 			logger.Debug("Entry: " + string(bytes))
 		}
 
-		entries = append(entries, entry)
 	}
 
 	result, err := json.Marshal(entries)
