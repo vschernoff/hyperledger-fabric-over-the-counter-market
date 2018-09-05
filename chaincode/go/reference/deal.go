@@ -23,8 +23,6 @@ type DealKey struct {
 }
 
 type DealValue struct {
-	Borrower  string  `json:"borrower"`
-	Lender    string  `json:"lender"`
 	Amount    float32 `json:"amount"`
 	Rate      float32 `json:"rate"`
 	Timestamp int64   `json:"timestamp"`
@@ -176,7 +174,8 @@ func (deal *Deal) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
 		return err
 	}
 
-	if err = stub.PutState(compositeKey, value); err != nil {
+	// === Save deal to state ===
+	if err = stub.PutPrivateData("collectionDeals", compositeKey, value); err != nil {
 		return err
 	}
 

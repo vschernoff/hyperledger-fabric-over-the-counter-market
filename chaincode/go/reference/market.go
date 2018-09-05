@@ -302,22 +302,34 @@ func (t *MarketChaincode) makeDeal(stub shim.ChaincodeStubInterface, args []stri
 	} else { // typeBorrow
 		lender, borrower = creator, bid.Value.Creator
 	}
-
+    ID := uuid.Must(uuid.NewV4()).String()
 	deal := Deal {
 		Key: DealKey {
-			ID: uuid.Must(uuid.NewV4()).String(),
+			ID: ID,
 		},
 		Value: DealValue {
-			Borrower: borrower,
-			Lender: lender,
 			Amount: bid.Value.Amount,
 			Rate: bid.Value.Rate,
 			Timestamp: time.Now().UTC().Unix(),
 		},
 	}
 
+	members := Members{
+		Key: MembersKey {
+			ID: ID,
+		},
+		Value: MembersValue {
+			Borrower: borrower,
+			Lender  : lender,
+		},
+	}
+
 	if bytes, err := json.Marshal(deal); err == nil {
 		logger.Debug("Deal: " + string(bytes))
+	}
+
+	if bytes, err := json.Marshal(members); err == nil {
+		logger.Debug("Members: " + string(bytes))
 	}
 
 	if err := bid.UpdateOrInsertIn(stub); err != nil {
@@ -327,6 +339,12 @@ func (t *MarketChaincode) makeDeal(stub shim.ChaincodeStubInterface, args []stri
 	}
 
 	if err := deal.UpdateOrInsertIn(stub); err != nil {
+		message := fmt.Sprintf("persistence error: %s", err.Error())
+		logger.Error(message)
+		return pb.Response{Status: 500, Message: message}
+	}
+
+	if err := members.UpdateOrInsertIn(stub); err != nil {
 		message := fmt.Sprintf("persistence error: %s", err.Error())
 		logger.Error(message)
 		return pb.Response{Status: 500, Message: message}
