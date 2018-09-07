@@ -156,7 +156,7 @@ func (bid *Bid) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
 		return err
 	}
 
-	if err = stub.PutState(compositeKey, value); err != nil {
+	if err = stub.PutPrivateData("collectionBids", compositeKey, value); err != nil {
 		return err
 	}
 

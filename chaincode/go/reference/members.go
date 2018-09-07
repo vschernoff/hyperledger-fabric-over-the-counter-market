@@ -9,12 +9,6 @@ const (
 	membersIndex = "Members"
 )
 
-const (
-	abDeals = iota
-	acDeals
-	caDeals
-)
-
 type lenderT   string;
 type borrowerT string;
 
@@ -59,7 +53,9 @@ func (members *Members) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error
 	}
 
 	// === Save members to state ===
-	if err = stub.PutPrivateData(collectionMembers[lenderT(members.Value.Lender)][borrowerT(members.Value.Borrower)], compositeKey, value); err != nil {
+	logger.Debug("Collection name: " + string(collectionMembers[lenderT(members.Value.Lender)][borrowerT(members.Value.Borrower)]))
+
+	if err = stub.PutPrivateData(string(collectionMembers[lenderT(members.Value.Lender)][borrowerT(members.Value.Borrower)]), compositeKey, value); err != nil {
 		return err
 	}
 

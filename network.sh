@@ -42,8 +42,9 @@ COMPOSE_FILE_DEV=$TEMPLATES_DOCKER_COMPOSE_FOLDER/docker-composedev.yaml
 CHAINCODE_VERSION="1.0"
 CHAINCODE_COMMON_NAME=reference
 CHAINCODE_BILATERAL_NAME=relationship
-CHAINCODE_COMMON_INIT='{"Args":["init","a","100","b","100"]}'
-CHAINCODE_BILATERAL_INIT='{"Args":["init","a","100","b","100"]}'
+CHAINCODE_COMMON_INIT='{"Args":["init"]}'
+CHAINCODE_BILATERAL_INIT='{"Args":["init"]}'
+COLLECTION_CONFIG='$GOPATH/src/reference/collections_config.json'
 # TODO: evaluate dynamically
 
 DEFAULT_ORDERER_PORT=7050
@@ -452,13 +453,19 @@ function instantiateChaincode () {
     channel_names=($2)
     n=$3
     i=$4
+    a=$5
+    if [ -n "$a" ]; then
+    a="-P \"OR('aMSP.member','bMSP.member','cMSP.member')\" --collections-config $a";
+    else
+    a="";
+    fi
+
     f="$GENERATED_DOCKER_COMPOSE_FOLDER/docker-compose-${org}.yaml"
 
     for channel_name in ${channel_names[@]}; do
         info "instantiating chaincode $n on $channel_name by $org using $f with $i"
 
-        c="CORE_PEER_ADDRESS=peer0.$org.$DOMAIN:7051 peer chaincode instantiate -n $n -v ${CHAINCODE_VERSION} -c '$i' -o orderer.$DOMAIN:7050 -C $channel_name --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
-
+        c="CORE_PEER_ADDRESS=peer0.$org.$DOMAIN:7051 peer chaincode instantiate -n $n -v ${CHAINCODE_VERSION} -c '$i' -o orderer.$DOMAIN:7050 -C $channel_name  $a --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
         d="cli.$org.$DOMAIN"
 
         echo "instantiating with $d by $c"
@@ -584,11 +591,12 @@ function createJoinInstantiateWarmUp() {
   channel_name=${2}
   chaincode_name=${3}
   chaincode_init=${4}
+  additional=${5}
 
   createChannel ${org} ${channel_name}
   joinChannel ${org} ${channel_name}
-  instantiateChaincode ${org} ${channel_name} ${chaincode_name} ${chaincode_init}
-#  sleep 2
+  instantiateChaincode ${org} ${channel_name} ${chaincode_name} ${chaincode_init} ${additional}
+  sleep 2
 #  warmUpChaincode ${org} ${channel_name} ${chaincode_name}
 }
 
@@ -1224,7 +1232,8 @@ if [ "${MODE}" == "up" -a "${ORG}" == "" ]; then
     installAll ${org}
   done
 
-  createJoinInstantiateWarmUp ${ORG1} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT}
+  createJoinInstantiateWarmUp ${ORG1} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT} ${COLLECTION_CONFIG}
+  #createJoinInstantiateWarmUp ${ORG1} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT}
   createJoinInstantiateWarmUp ${ORG1} "${ORG1}-${ORG2}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
   createJoinInstantiateWarmUp ${ORG1} "${ORG1}-${ORG3}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
 

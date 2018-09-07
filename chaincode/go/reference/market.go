@@ -302,10 +302,10 @@ func (t *MarketChaincode) makeDeal(stub shim.ChaincodeStubInterface, args []stri
 	} else { // typeBorrow
 		lender, borrower = creator, bid.Value.Creator
 	}
-    ID := uuid.Must(uuid.NewV4()).String()
+    //ID := uuid.Must(uuid.NewV4()).String()
 	deal := Deal {
 		Key: DealKey {
-			ID: ID,
+			ID: uuid.Must(uuid.NewV4()).String(),
 		},
 		Value: DealValue {
 			Amount: bid.Value.Amount,
@@ -316,7 +316,7 @@ func (t *MarketChaincode) makeDeal(stub shim.ChaincodeStubInterface, args []stri
 
 	members := Members{
 		Key: MembersKey {
-			ID: ID,
+			ID: uuid.Must(uuid.NewV4()).String(),
 		},
 		Value: MembersValue {
 			Borrower: borrower,
@@ -623,10 +623,10 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 			return shim.Error(message)
 		}
 
-		if (creator == entry.Value.Borrower || creator == entry.Value.Lender) && deal.timePeriodFrom <= entry.Value.Timestamp &&
-			deal.timePeriodTo >= entry.Value.Timestamp{
-			entries = append(entries, entry)
-		}
+		//if (creator == entry.Value.Borrower || creator == entry.Value.Lender) && deal.timePeriodFrom <= entry.Value.Timestamp &&
+		//	deal.timePeriodTo >= entry.Value.Timestamp{
+		//	entries = append(entries, entry)
+		//}
 
 		if bytes, err := json.Marshal(entry); err == nil {
 			logger.Debug("Entry: " + string(bytes))

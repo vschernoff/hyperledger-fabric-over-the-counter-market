@@ -14,3 +14,4 @@ fabric-rest-api.iws
 /ledger/docker-compose-*.yaml-e
 /www/artifacts/*.block
 /dockercompose/*.yaml
+/logs
