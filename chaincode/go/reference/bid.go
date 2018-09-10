@@ -124,7 +124,7 @@ func (bid *Bid) ExistsIn(stub shim.ChaincodeStubInterface) bool {
 		return false
 	}
 
-	if data, err := stub.GetState(compositeKey); err != nil || data == nil {
+	if data, err := stub.GetPrivateData("collectionBids", compositeKey); err != nil || data == nil {
 		return false
 	}
 
