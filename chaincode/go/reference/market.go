@@ -21,6 +21,32 @@ type MarketChaincode struct {
 
 func (t *MarketChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	logger.Debug("Init")
+
+	_, args := stub.GetFunctionAndParameters()
+	if len(args) > 0 {
+		logger.Debug("Organization names: " + strings.Join(args, ", "))
+
+		compositeKey, err := stub.CreateCompositeKey(orgsIndex, []string{})
+		if err != nil {
+			message := fmt.Sprintf("unable to create orgs composite key: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		value, err := json.Marshal(args)
+		if err != nil {
+			message := fmt.Sprintf("unable to marshal organization names: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		if err := stub.PutState(compositeKey, value); err != nil {
+			message := fmt.Sprintf("persistence error: %s", err.Error())
+			logger.Error(message)
+			return pb.Response{Status: 500, Message: message}
+		}
+	}
+
 	return shim.Success(nil)
 }
 
@@ -39,6 +65,8 @@ func (t *MarketChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.queryBids(stub, args)
 	} else if function == "queryDeals" {
 		return t.queryDeals(stub, args)
+	} else if function == "queryFromCollection" {
+		return t.queryFromCollection(stub, args)
 	}
 
 	return pb.Response{Status:403, Message:"Invalid invoke function name."}
@@ -376,6 +404,78 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 
 	logger.Info("MarketChaincode.queryDeals exited without errors")
 	logger.Debug("Success: MarketChaincode.queryDeals")
+	return shim.Success(result)
+}
+
+func (t *MarketChaincode) queryFromCollection(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	logger.Info("MarketChaincode.queryFromCollection is running")
+	logger.Debug("MarketChaincode.queryFromCollection")
+
+	if len(args) < 1 {
+		message := fmt.Sprintf("insufficient number of arguments: expected %d, got %d",
+			1, len(args))
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	collection := args[0]
+
+	it, err := stub.GetPrivateDataByPartialCompositeKey(collection, dealIndex, []string{})
+	if err != nil {
+		message := fmt.Sprintf("unable to get state from collection %s by partial composite key %s: %s",
+			collection, dealIndex, err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+	defer it.Close()
+
+	entries := []Deal{}
+	for it.HasNext() {
+		response, err := it.Next()
+		if err != nil {
+			message := fmt.Sprintf("unable to get an element next to a query iterator: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
+
+		entry := Deal{}
+
+		if err := entry.FillFromLedgerValue(response.Value); err != nil {
+			message := fmt.Sprintf("cannot fill deal value from response value: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		_, compositeKeyParts, err := stub.SplitCompositeKey(response.Key)
+		if err != nil {
+			message := fmt.Sprintf("cannot split response key into composite key parts slice: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		if err := entry.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
+			message := fmt.Sprintf("cannot fill deal key from composite key parts: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		if bytes, err := json.Marshal(entry); err == nil {
+			logger.Debug("Entry: " + string(bytes))
+		}
+
+		entries = append(entries, entry)
+	}
+
+	result, err := json.Marshal(entries)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	logger.Debug("Result: " + string(result))
+
+	logger.Info("MarketChaincode.queryFromCollection exited without errors")
+	logger.Debug("Success: MarketChaincode.queryFromCollection")
 	return shim.Success(result)
 }
 

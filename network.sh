@@ -42,7 +42,8 @@ COMPOSE_FILE_DEV=$TEMPLATES_DOCKER_COMPOSE_FOLDER/docker-composedev.yaml
 CHAINCODE_VERSION="1.0"
 CHAINCODE_COMMON_NAME=reference
 CHAINCODE_BILATERAL_NAME=relationship
-CHAINCODE_COMMON_INIT='{"Args":["init","a","100","b","100"]}'
+# TODO: evaluate dynamically
+CHAINCODE_COMMON_INIT='{"Args":["init","a","b","c"]}'
 CHAINCODE_BILATERAL_INIT='{"Args":["init","a","100","b","100"]}'
 # TODO: evaluate dynamically
 CHAINCODE_COMMON_COLLECTIONS_CONFIG=/opt/gopath/src/reference/collections-config.json

@@ -11,6 +11,7 @@ import (
 
 const (
 	dealIndex = "Deal"
+	orgsIndex = "Orgs"
 )
 
 const (
@@ -149,6 +150,12 @@ func (deal *Deal) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
 		collection = fmt.Sprintf("%s-%s", deal.Value.Borrower, deal.Value.Lender)
 	} else {
 		collection = fmt.Sprintf("%s-%s", deal.Value.Lender, deal.Value.Borrower)
+	}
+	fmt.Sprintf("Collection: %s, deal key: %s", collection, compositeKey)
+
+	//if err = stub.PutPrivateData(collection, compositeKey, value); err != nil {
+	if err = stub.PutState(compositeKey, value); err != nil {
+		return err
 	}
 
 	if err = stub.PutPrivateData(collection, compositeKey, value); err != nil {
