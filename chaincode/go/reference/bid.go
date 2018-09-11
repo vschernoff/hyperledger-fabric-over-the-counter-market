@@ -137,7 +137,7 @@ func (bid *Bid) LoadFrom(stub shim.ChaincodeStubInterface) error {
 		return err
 	}
 
-	data, err := stub.GetState(compositeKey)
+	data, err := stub.GetPrivateData("collectionBids", compositeKey)
 	if err != nil {
 		return err
 	}

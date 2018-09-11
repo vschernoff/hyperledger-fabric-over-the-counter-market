@@ -14,7 +14,6 @@ const (
 
 const (
 	dealKeyFieldsNumber      = 1
-	dealBasicArgumentsNumber = 3
 )
 
 type DealKey struct {
@@ -74,7 +73,7 @@ func (deal *Deal) ExistsIn(stub shim.ChaincodeStubInterface) bool {
 		return false
 	}
 
-	if data, err := stub.GetState(compositeKey); err != nil || data == nil {
+	if data, err := stub.GetPrivateData("collectionDeals", compositeKey); err != nil || data == nil {
 		return false
 	}
 
@@ -87,7 +86,7 @@ func (deal *Deal) LoadFrom(stub shim.ChaincodeStubInterface) error {
 		return err
 	}
 
-	data, err := stub.GetState(compositeKey)
+	data, err := stub.GetPrivateData("collectionDeals", compositeKey)
 	if err != nil {
 		return err
 	}
