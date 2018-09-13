@@ -27,7 +27,7 @@ class LineBarAreaComposedChart extends React.Component {
                        margin={{top: 20, right: 20, bottom: 20, left: 20}}>
           <CartesianGrid stroke='#f5f5f5'/>
           <XAxis dataKey="value.ts" name="Time"/>
-          <YAxis yAxisId="left" tickFormatter={formatter.rate} unit={commonConstants.RATE_SIGN}/>
+          <YAxis yAxisId="left" tickFormatter={formatter.rate} unit={commonConstants.RATE_SIGN} interval={0} />
           <YAxis yAxisId="right" tickFormatter={formatter.number} orientation="right" unit={commonConstants.CURRENCY_SIGN}/>
           <Tooltip />
           <Legend />
