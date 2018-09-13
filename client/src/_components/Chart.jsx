@@ -31,8 +31,8 @@ class LineBarAreaComposedChart extends React.Component {
           <YAxis yAxisId="right" tickFormatter={formatter.number} orientation="right" unit={commonConstants.CURRENCY_SIGN}/>
           <Tooltip />
           <Legend />
-          <Bar yAxisId="right" dataKey='value.amount' name="Amount" barSize={20} fill='#413ea0' />
-          <Line yAxisId="left" dataKey='value.rate' name="Rate" type='monotone' stroke='#ff7300' />
+          <Bar yAxisId="right" dataKey='value.amount' name="Amount" barSize={20} fill='#413ea0' unit={commonConstants.CURRENCY_SIGN} />
+          <Line yAxisId="left" dataKey='value.rate' name="Rate" type='monotone' stroke='#ff7300' unit={commonConstants.RATE_SIGN} />
         </ComposedChart>
       </ResponsiveContainer>
     );
