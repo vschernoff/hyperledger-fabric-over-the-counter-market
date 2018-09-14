@@ -238,15 +238,10 @@ function generateOrdererArtifacts() {
         generateNetworkConfig ${ORG1} ${ORG2} ${ORG3}
         # replace in configtx
         sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG1/$ORG1/g" -e "s/ORG2/$ORG2/g" -e "s/ORG3/$ORG3/g" $TEMPLATES_ARTIFACTS_FOLDER/configtxtemplate.yaml > $GENERATED_ARTIFACTS_FOLDER/configtx.yaml
-        createChannels=("common" "$ORG1-$ORG2" "$ORG1-$ORG3" "$ORG2-$ORG3")
+#        createChannels=("common" "$ORG1-$ORG2" "$ORG1-$ORG3" "$ORG2-$ORG3")
+        createChannels=("common")
     fi
 
-
-    for channel_name in ${createChannels[@]}
-    do
-        echo "Generating channel config transaction for $channel_name"
-        docker-compose --file ${f} run --rm -e FABRIC_CFG_PATH=/etc/hyperledger/artifacts "cli.$DOMAIN" configtxgen -profile "$channel_name" -outputCreateChannelTx "./channel/$channel_name.tx" -channelID "$channel_name"
-    done
 
     # replace in cryptogen
     sed -e "s/DOMAIN/$DOMAIN/g" $TEMPLATES_ARTIFACTS_FOLDER/cryptogentemplate-orderer.yaml > "$GENERATED_ARTIFACTS_FOLDER/cryptogen-$DOMAIN.yaml"
@@ -259,7 +254,24 @@ function generateOrdererArtifacts() {
     echo "Generating orderer genesis block with configtxgen"
     docker-compose --file ${f} run --rm -e FABRIC_CFG_PATH=/etc/hyperledger/artifacts "cli.$DOMAIN" configtxgen -profile OrdererGenesis -outputBlock ./channel/genesis.block
 
-    echo "Changing artifacts file ownership"
+#    echo "Changing artifacts file ownership"
+#    docker-compose --file ${f} run --rm "cli.$DOMAIN" bash -c "chown -R $UID:$GID ."
+
+
+    for channel_name in ${createChannels[@]}
+    do
+        echo "Generating channel config transaction for $channel_name"
+        docker-compose --file ${f} run --rm -e FABRIC_CFG_PATH=/etc/hyperledger/artifacts "cli.$DOMAIN" configtxgen -profile "$channel_name" -outputCreateChannelTx "./channel/$channel_name.tx" -channelID "$channel_name"
+
+        for myorg in ${ORG1} ${ORG2} ${ORG3}
+        do
+            echo "Generating anchor peers update for ${myorg}"
+            docker-compose --file $GENERATED_DOCKER_COMPOSE_FOLDER/docker-compose-${myorg}.yaml run --rm -e FABRIC_CFG_PATH=/etc/hyperledger/artifacts "cli.$myorg.$DOMAIN" configtxgen -profile "$channel_name" --outputAnchorPeersUpdate "./channel/${myorg}MSPanchors-$channel_name.tx" -channelID "$channel_name" -asOrg ${myorg}MSP
+        done
+
+    done
+
+    echo "changing ownership of channel block files"
     docker-compose --file ${f} run --rm "cli.$DOMAIN" bash -c "chown -R $UID:$GID ."
 }
 
@@ -419,6 +431,14 @@ function generateChannelConfig() {
 
     f="$GENERATED_DOCKER_COMPOSE_FOLDER/docker-compose-$DOMAIN.yaml"
     docker-compose --file ${f} run --rm -e FABRIC_CFG_PATH=/etc/hyperledger/artifacts "cli.$DOMAIN" configtxgen -profile "$channel_name" -outputCreateChannelTx "./channel/$channel_name.tx" -channelID "$channel_name"
+
+    for org in "${@:3}"
+    do
+        docker-compose --file ${f} run --rm -e FABRIC_CFG_PATH=/etc/hyperledger/artifacts "cli.$DOMAIN" configtxgen -profile "$channel_name" --outputAnchorPeersUpdate "./channel/${org}MSPanchors-$channel_name.tx" -channelID "$channel_name" -asOrg ${org}MSP
+    done
+
+    echo "changing ownership of channel block files"
+    docker-compose --file ${f} run --rm "cli.$DOMAIN" bash -c "chown -R $UID:$GID ."
 }
 
 function createChannel () {
@@ -430,6 +450,11 @@ function createChannel () {
 
     echo "docker-compose --file ${f} run --rm \"cli.$org.$DOMAIN\" bash -c \"peer channel create -o orderer.$DOMAIN:7050 -c $channel_name -f /etc/hyperledger/artifacts/channel/$channel_name.tx --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt\""
     docker-compose --file ${f} run --rm "cli.$org.$DOMAIN" bash -c "peer channel create -o orderer.$DOMAIN:7050 -c $channel_name -f /etc/hyperledger/artifacts/channel/$channel_name.tx --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
+
+    sleep 2
+
+    echo "docker-compose --file ${f} run --rm \"cli.$org.$DOMAIN\" bash -c \"peer channel update -o orderer.$DOMAIN:7050 -c $channel_name -f /etc/hyperledger/artifacts/channel/${org}MSPanchors-$channel_name.tx --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt\""
+    docker-compose --file ${f} run --rm "cli.$org.$DOMAIN" bash -c "peer channel update -o orderer.$DOMAIN:7050 -c $channel_name -f /etc/hyperledger/artifacts/channel/${org}MSPanchors-$channel_name.tx --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
 
     echo "changing ownership of channel block files"
     docker-compose --file ${f} run --rm "cli.$DOMAIN" bash -c "chown -R $UID:$GID ."
@@ -1236,16 +1261,16 @@ if [ "${MODE}" == "up" -a "${ORG}" == "" ]; then
 
   createJoinInstantiateWarmUp ${ORG1} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT} ${COLLECTION_CONFIG}
   #createJoinInstantiateWarmUp ${ORG1} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT}
-  createJoinInstantiateWarmUp ${ORG1} "${ORG1}-${ORG2}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
-  createJoinInstantiateWarmUp ${ORG1} "${ORG1}-${ORG3}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
+#  createJoinInstantiateWarmUp ${ORG1} "${ORG1}-${ORG2}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
+#  createJoinInstantiateWarmUp ${ORG1} "${ORG1}-${ORG3}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
 
   joinWarmUp ${ORG2} common ${CHAINCODE_COMMON_NAME}
-  joinWarmUp ${ORG2} "${ORG1}-${ORG2}" ${CHAINCODE_BILATERAL_NAME}
-  createJoinInstantiateWarmUp ${ORG2} "${ORG2}-${ORG3}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
+#  joinWarmUp ${ORG2} "${ORG1}-${ORG2}" ${CHAINCODE_BILATERAL_NAME}
+#  createJoinInstantiateWarmUp ${ORG2} "${ORG2}-${ORG3}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
 
   joinWarmUp ${ORG3} common ${CHAINCODE_COMMON_NAME}
-  joinWarmUp ${ORG3} "${ORG1}-${ORG3}" ${CHAINCODE_BILATERAL_NAME}
-  joinWarmUp ${ORG3} "${ORG2}-${ORG3}" ${CHAINCODE_BILATERAL_NAME}
+#  joinWarmUp ${ORG3} "${ORG1}-${ORG3}" ${CHAINCODE_BILATERAL_NAME}
+#  joinWarmUp ${ORG3} "${ORG2}-${ORG3}" ${CHAINCODE_BILATERAL_NAME}
 
 elif [ "${MODE}" == "down" ]; then
   for org in ${DOMAIN} ${ORG1} ${ORG2} ${ORG3}
