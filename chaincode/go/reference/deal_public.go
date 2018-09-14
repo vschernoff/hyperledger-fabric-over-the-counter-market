@@ -20,18 +20,30 @@ type DealKey struct {
 	ID string `json:"id"`
 }
 
-type DealValue struct {
+type DealPublicValue struct {
 	Amount    float32 `json:"amount"`
 	Rate      float32 `json:"rate"`
 	Timestamp int64   `json:"timestamp"`
 }
 
-type Deal struct {
+type DealPublic struct {
 	Key   DealKey   `json:"key"`
+	Value DealPublicValue `json:"value"`
+}
+
+type DealValue struct {
+	Amount    float32      `json:"amount"`
+	Rate      float32      `json:"rate"`
+	Timestamp int64   	   `json:"timestamp"`
+	Members   MembersValue `json:"members"`
+}
+
+type Deal struct {
+	Key   DealKey       `json:"key"`
 	Value DealValue `json:"value"`
 }
 
-func (deal *Deal) FillFromCompositeKeyParts(compositeKeyParts []string) error {
+func (deal *DealPublic) FillFromCompositeKeyParts(compositeKeyParts []string) error {
 	if len(compositeKeyParts) < dealKeyFieldsNumber {
 		return errors.New(fmt.Sprintf("composite key parts array must contain at least %d items", dealKeyFieldsNumber))
 	}
@@ -47,7 +59,7 @@ func (deal *Deal) FillFromCompositeKeyParts(compositeKeyParts []string) error {
 	return nil
 }
 
-func (deal *Deal) FillFromLedgerValue(ledgerValue []byte) error {
+func (deal *DealPublic) FillFromLedgerValue(ledgerValue []byte) error {
 	if err := json.Unmarshal(ledgerValue, &deal.Value); err != nil {
 		return err
 	} else {
@@ -55,7 +67,7 @@ func (deal *Deal) FillFromLedgerValue(ledgerValue []byte) error {
 	}
 }
 
-func (deal *Deal) ToCompositeKey(stub shim.ChaincodeStubInterface) (string, error) {
+func (deal *DealPublic) ToCompositeKey(stub shim.ChaincodeStubInterface) (string, error) {
 	compositeKeyParts := []string {
 		deal.Key.ID,
 	}
@@ -63,11 +75,11 @@ func (deal *Deal) ToCompositeKey(stub shim.ChaincodeStubInterface) (string, erro
 	return stub.CreateCompositeKey(dealIndex, compositeKeyParts)
 }
 
-func (deal *Deal) ToLedgerValue() ([]byte, error) {
+func (deal *DealPublic) ToLedgerValue() ([]byte, error) {
 	return json.Marshal(deal.Value)
 }
 
-func (deal *Deal) ExistsIn(stub shim.ChaincodeStubInterface) bool {
+func (deal *DealPublic) ExistsIn(stub shim.ChaincodeStubInterface) bool {
 	compositeKey, err := deal.ToCompositeKey(stub)
 	if err != nil {
 		return false
@@ -80,7 +92,7 @@ func (deal *Deal) ExistsIn(stub shim.ChaincodeStubInterface) bool {
 	return true
 }
 
-func (deal *Deal) LoadFrom(stub shim.ChaincodeStubInterface) error {
+func (deal *DealPublic) LoadFrom(stub shim.ChaincodeStubInterface) error {
 	compositeKey, err := deal.ToCompositeKey(stub)
 	if err != nil {
 		return err
@@ -94,7 +106,7 @@ func (deal *Deal) LoadFrom(stub shim.ChaincodeStubInterface) error {
 	return deal.FillFromLedgerValue(data)
 }
 
-func (deal *Deal) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
+func (deal *DealPublic) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
 	compositeKey, err := deal.ToCompositeKey(stub)
 	if err != nil {
 		return err

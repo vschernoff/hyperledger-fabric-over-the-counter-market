@@ -36,10 +36,6 @@ func (time *TimePeriod) FillFromArguments(args []string) error {
 		return errors.New(fmt.Sprintf("unable to parse the timePeriodTo: %s", err.Error()))
 	}
 
-	if timePeriodTo < 0 {
-		return errors.New("timePeriodTo must be larger than zero")
-	}
-
 	if timePeriodTo < timePeriodFrom {
 		return errors.New("timePeriodTo must be larger than timePeriodFrom")
 	}

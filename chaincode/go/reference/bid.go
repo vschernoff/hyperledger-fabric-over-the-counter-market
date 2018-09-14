@@ -124,7 +124,7 @@ func (bid *Bid) ExistsIn(stub shim.ChaincodeStubInterface) bool {
 		return false
 	}
 
-	if data, err := stub.GetPrivateData("collectionBids", compositeKey); err != nil || data == nil {
+	if data, err := stub.GetState( compositeKey); err != nil || data == nil {
 		return false
 	}
 
@@ -137,7 +137,7 @@ func (bid *Bid) LoadFrom(stub shim.ChaincodeStubInterface) error {
 		return err
 	}
 
-	data, err := stub.GetPrivateData("collectionBids", compositeKey)
+	data, err := stub.GetState(compositeKey)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (bid *Bid) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
 		return err
 	}
 
-	if err = stub.PutPrivateData("collectionBids", compositeKey, value); err != nil {
+	if err = stub.PutState(compositeKey, value); err != nil {
 		return err
 	}
 

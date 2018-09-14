@@ -303,11 +303,11 @@ func (t *MarketChaincode) makeDeal(stub shim.ChaincodeStubInterface, args []stri
 		lender, borrower = creator, bid.Value.Creator
 	}
     ID := uuid.Must(uuid.NewV4()).String()
-	deal := Deal {
+	deal := DealPublic {
 		Key: DealKey {
 			ID: ID,
 		},
-		Value: DealValue {
+		Value: DealPublicValue {
 			Amount: bid.Value.Amount,
 			Rate: bid.Value.Rate,
 			Timestamp: time.Now().UTC().Unix(),
@@ -359,7 +359,7 @@ func (t *MarketChaincode) queryBids(stub shim.ChaincodeStubInterface, args []str
 	logger.Info("MarketChaincode.queryBids is running")
 	logger.Debug("MarketChaincode.queryBids")
 
-	it, err := stub.GetPrivateDataByPartialCompositeKey("collectionBids", bidIndex, []string{})
+	it, err := stub.GetStateByPartialCompositeKey(bidIndex, []string{})
 	if err != nil {
 		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", bidIndex, err.Error())
 		logger.Error(message)
@@ -430,7 +430,7 @@ func (t *MarketChaincode) queryBidsCreator(stub shim.ChaincodeStubInterface, arg
 
 	logger.Debug("Creator: " + creator)
 
-	it, err := stub.GetPrivateDataByPartialCompositeKey("collectionBids", bidIndex, []string{})
+	it, err := stub.GetStateByPartialCompositeKey(bidIndex, []string{})
 	if err != nil {
 		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", bidIndex, err.Error())
 		logger.Error(message)
@@ -502,7 +502,7 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 	}
 	defer it.Close()
 
-	entries := []Deal{}
+	entries := []DealPublic{}
 	for it.HasNext() {
 		response, err := it.Next()
 		if err != nil {
@@ -513,7 +513,7 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 
 		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
 
-		entry := Deal{}
+		entry := DealPublic{}
 
 		if err := entry.FillFromLedgerValue(response.Value); err != nil {
 			message := fmt.Sprintf("cannot fill deal value from response value: %s", err.Error())
@@ -592,8 +592,8 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 	}
 	defer it.Close()
 
-	entries := []Deal{}
-	//members := []Members{}
+	entries := []DealFull{}
+
 	for it.HasNext() {
 		response, err := it.Next()
 		if err != nil {
@@ -604,8 +604,8 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 
 		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
 
-		entry := Deal{}
-
+		entry := DealPublic{}
+		members := Members{}
 
 		if err := entry.FillFromLedgerValue(response.Value); err != nil {
 			message := fmt.Sprintf("cannot fill deal value from response value: %s", err.Error())
@@ -626,12 +626,23 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 			return shim.Error(message)
 		}
 
-		//if (creator == entry.Value.Borrower || creator == entry.Value.Lender) && time.From <= entry.Value.Timestamp &&
-		//	time.To >= entry.Value.Timestamp{
-		//	entries = append(entries, entry)
-		//}
+		members.Key.ID =
+		creatorCollections := collectionMembers[lenderT(creator)]
+
+		for k := range creatorCollections {
+
+			logger.Debug(fmt.Sprintf("Get private collection: %s", string(creatorCollections[k])))
+			members, err := stub.GetPrivateData(string(creatorCollections[k]), compositeKey)
+			compositeKey, err := members.ToCompositeKey(stub)
+
+			//if (creator == entry.Value.Borrower || creator == entry.Value.Lender) && time.From <= entry.Value.Timestamp &&
+			//	time.To >= entry.Value.Timestamp{
+			//	entries = append(entries, entry)
+			//}
+		}
 
 		if bytes, err := json.Marshal(entry); err == nil {
+
 			logger.Debug("Entry: " + string(bytes))
 		}
 
