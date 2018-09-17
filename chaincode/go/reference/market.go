@@ -40,12 +40,12 @@ func (t *MarketChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.makeDeal(stub, args)
 	} else if function == "queryBids" {
 		return t.queryBids(stub, args)
-	} else if function == "queryBidsCreator" {
-		return t.queryBidsCreator(stub, args)
+	} else if function == "queryBidsForCreator" {
+		return t.queryBidsForCreator(stub, args)
 	} else if function == "queryDeals" {
 		return t.queryDeals(stub, args)
-	} else if function == "queryDealsCreatorByTime" {
-		return t.queryDealsCreatorByTime(stub, args)
+	} else if function == "queryDealsForCreatorByPeriod" {
+		return t.queryDealsForCreatorByPeriod(stub, args)
 	}
 
 	return pb.Response{Status:403, Message:"Invalid invoke function name."}
@@ -355,9 +355,9 @@ func (t *MarketChaincode) queryBids(stub shim.ChaincodeStubInterface, args []str
 	return shim.Success(result)
 }
 
-func (t *MarketChaincode) queryBidsCreator(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	logger.Info("MarketChaincode.queryBidsCreator is running")
-	logger.Debug("MarketChaincode.queryBidsCreator")
+func (t *MarketChaincode) queryBidsForCreator(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	logger.Info("MarketChaincode.queryBidsForCreator is running")
+	logger.Debug("MarketChaincode.queryBidsForCreator")
 
 	creator, err := GetCreatorOrganization(stub)
 	if err != nil {
@@ -386,8 +386,8 @@ func (t *MarketChaincode) queryBidsCreator(stub shim.ChaincodeStubInterface, arg
 
 	logger.Debug("Result: " + string(result))
 
-	logger.Info("MarketChaincode.queryBidsCreator exited without errors")
-	logger.Debug("Success: MarketChaincode.queryBidsCreator")
+	logger.Info("MarketChaincode.queryBidsForCreator exited without errors")
+	logger.Debug("Success: MarketChaincode.queryBidsForCreator")
 	return shim.Success(result)
 }
 
@@ -410,9 +410,9 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 }
 
 
-func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	logger.Info("MarketChaincode.queryDealsCreatorByTime is running")
-	logger.Debug("MarketChaincode.queryDealsCreatorByTime")
+func (t *MarketChaincode) queryDealsForCreatorByPeriod(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	logger.Info("MarketChaincode.queryDealsForCreatorByPeriod is running")
+	logger.Debug("MarketChaincode.queryDealsForCreatorByPeriod")
 
 	if len(args) < timePeriodArgumentsNumber {
 		message := fmt.Sprintf("insufficient number of arguments: expected %d, got %d",
@@ -462,8 +462,8 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 
 	logger.Debug("Result: " + string(result))
 
-	logger.Info("MarketChaincode.queryDealsCreatorByTime exited without errors")
-	logger.Debug("Success: MarketChaincode.queryDealsCreatorByTime")
+	logger.Info("MarketChaincode.queryDealsForCreatorByPeriod exited without errors")
+	logger.Debug("Success: MarketChaincode.queryDealsForCreatorByPeriod")
 	return shim.Success(result)
 }
 
