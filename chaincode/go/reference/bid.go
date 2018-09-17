@@ -47,6 +47,10 @@ type Bid struct {
 	Value BidValue `json:"value"`
 }
 
+func CreateBid() LedgerData {
+	return new(Bid)
+}
+
 func (bid *Bid) FillFromArguments(args []string) error {
 	if len(args) < bidBasicArgumentsNumber {
 		return errors.New(fmt.Sprintf("arguments array must contain at least %d items", bidBasicArgumentsNumber))

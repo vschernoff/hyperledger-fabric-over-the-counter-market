@@ -341,57 +341,13 @@ func (t *MarketChaincode) queryBids(stub shim.ChaincodeStubInterface, args []str
 	logger.Info("MarketChaincode.queryBids is running")
 	logger.Debug("MarketChaincode.queryBids")
 
-	it, err := stub.GetStateByPartialCompositeKey(bidIndex, []string{})
+	result, err := Query(stub, bidIndex, []string{}, CreateBid, EmptyFilter)
 	if err != nil {
-		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", bidIndex, err.Error())
+		message := fmt.Sprintf("unable to perform query: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
 	}
-	defer it.Close()
 
-	entries := []Bid{}
-	for it.HasNext() {
-		response, err := it.Next()
-		if err != nil {
-			message := fmt.Sprintf("unable to get an element next to a queryBids iterator: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
-
-		entry := Bid{}
-
-		if err := entry.FillFromLedgerValue(response.Value); err != nil {
-			message := fmt.Sprintf("cannot fill bid value from response value: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		_, compositeKeyParts, err := stub.SplitCompositeKey(response.Key)
-		if err != nil {
-			message := fmt.Sprintf("cannot split response key into composite key parts slice: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		if err := entry.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
-			message := fmt.Sprintf("cannot fill bid key from composite key parts: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		if bytes, err := json.Marshal(entry); err == nil {
-			logger.Debug("Entry: " + string(bytes))
-		}
-
-		entries = append(entries, entry)
-	}
-
-	result, err := json.Marshal(entries)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
 	logger.Debug("Result: " + string(result))
 
 	logger.Info("MarketChaincode.queryBids exited without errors")
@@ -412,59 +368,22 @@ func (t *MarketChaincode) queryBidsCreator(stub shim.ChaincodeStubInterface, arg
 
 	logger.Debug("Creator: " + creator)
 
-	it, err := stub.GetStateByPartialCompositeKey(bidIndex, []string{})
+	filterByCreator := func(data LedgerData) bool {
+		bid, ok := data.(*Bid)
+		if ok && bid.Value.Creator == creator {
+			return true
+		}
+
+		return false
+	}
+
+	result, err := Query(stub, bidIndex, []string{}, CreateBid, filterByCreator)
 	if err != nil {
-		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", bidIndex, err.Error())
+		message := fmt.Sprintf("unable to perform query: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
 	}
-	defer it.Close()
 
-	entries := []Bid{}
-	for it.HasNext() {
-		response, err := it.Next()
-		if err != nil {
-			message := fmt.Sprintf("unable to get an element next to a queryBidsCreator iterator: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
-
-		entry := Bid{}
-
-		if err := entry.FillFromLedgerValue(response.Value); err != nil {
-			message := fmt.Sprintf("cannot fill bid value from response value: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		_, compositeKeyParts, err := stub.SplitCompositeKey(response.Key)
-		if err != nil {
-			message := fmt.Sprintf("cannot split response key into composite key parts slice: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		if err := entry.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
-			message := fmt.Sprintf("cannot fill bid key from composite key parts: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		if bytes, err := json.Marshal(entry); err == nil {
-			logger.Debug("Entry: " + string(bytes))
-		}
-
-		if creator == entry.Value.Creator {
-			entries = append(entries, entry)
-		}
-	}
-
-	result, err := json.Marshal(entries)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
 	logger.Debug("Result: " + string(result))
 
 	logger.Info("MarketChaincode.queryBidsCreator exited without errors")
@@ -476,57 +395,13 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 	logger.Info("MarketChaincode.queryDeals is running")
 	logger.Debug("MarketChaincode.queryDeals")
 
-	it, err := stub.GetStateByPartialCompositeKey(dealIndex, []string{})
+	result, err := Query(stub, dealIndex, []string{}, CreateDeal, EmptyFilter)
 	if err != nil {
-		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", dealIndex, err.Error())
+		message := fmt.Sprintf("unable to perform query: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
 	}
-	defer it.Close()
 
-	entries := []Deal{}
-	for it.HasNext() {
-		response, err := it.Next()
-		if err != nil {
-			message := fmt.Sprintf("unable to get an element next to a query iterator: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
-
-		entry := Deal{}
-
-		if err := entry.FillFromLedgerValue(response.Value); err != nil {
-			message := fmt.Sprintf("cannot fill deal value from response value: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		_, compositeKeyParts, err := stub.SplitCompositeKey(response.Key)
-		if err != nil {
-			message := fmt.Sprintf("cannot split response key into composite key parts slice: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		if err := entry.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
-			message := fmt.Sprintf("cannot fill deal key from composite key parts: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		if bytes, err := json.Marshal(entry); err == nil {
-			logger.Debug("Entry: " + string(bytes))
-		}
-
-		entries = append(entries, entry)
-	}
-
-	result, err := json.Marshal(entries)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
 	logger.Debug("Result: " + string(result))
 
 	logger.Info("MarketChaincode.queryDeals exited without errors")
@@ -539,22 +414,22 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 	logger.Info("MarketChaincode.queryDealsCreatorByTime is running")
 	logger.Debug("MarketChaincode.queryDealsCreatorByTime")
 
-	if len(args) < dealBasicArgumentsNumber + dealKeyFieldsNumber {
+	if len(args) < timePeriodArgumentsNumber {
 		message := fmt.Sprintf("insufficient number of arguments: expected %d, got %d",
-			dealBasicArgumentsNumber + dealKeyFieldsNumber, len(args))
+			timePeriodArgumentsNumber, len(args))
 		logger.Error(message)
 		return shim.Error(message)
 	}
 
-	deal := DealArgs{}
-	if err := deal.FillFromArguments(args); err != nil {
-		message := fmt.Sprintf("cannot fill a deal from arguments: %s", err.Error())
+	period := TimePeriod{}
+	if err := period.FillFromArguments(args); err != nil {
+		message := fmt.Sprintf("cannot fill a time period from arguments: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
 	}
 
-	logger.Debug("TimePeriodFrom: " + strconv.FormatInt(deal.timePeriodFrom,10))
-	logger.Debug("TimePeriodTo: " + strconv.FormatInt(deal.timePeriodTo,10))
+	logger.Debug("TimePeriodFrom: " + strconv.FormatInt(period.From,10))
+	logger.Debug("TimePeriodTo: " + strconv.FormatInt(period.To,10))
 
 	creator, err := GetCreatorOrganization(stub)
 	if err != nil {
@@ -565,61 +440,26 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 
 	logger.Debug("Creator: " + creator)
 
-	it, err := stub.GetStateByPartialCompositeKey(dealIndex, []string{})
+	filterByCreatorAndPeriod := func(data LedgerData) bool {
+		deal, ok := data.(*Deal)
+		if ok {
+			if deal.Value.Borrower == creator || deal.Value.Lender == creator {
+				if period.From <= deal.Value.Timestamp && period.To >= deal.Value.Timestamp {
+					return true
+				}
+			}
+		}
+
+		return false
+	}
+
+	result, err := Query(stub, dealIndex, []string{}, CreateDeal, filterByCreatorAndPeriod)
 	if err != nil {
-		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", dealIndex, err.Error())
+		message := fmt.Sprintf("unable to perform query: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
 	}
-	defer it.Close()
 
-	entries := []Deal{}
-	for it.HasNext() {
-		response, err := it.Next()
-		if err != nil {
-			message := fmt.Sprintf("unable to get an element next to a query iterator: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
-
-		entry := Deal{}
-
-		if err := entry.FillFromLedgerValue(response.Value); err != nil {
-			message := fmt.Sprintf("cannot fill deal value from response value: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		_, compositeKeyParts, err := stub.SplitCompositeKey(response.Key)
-		if err != nil {
-			message := fmt.Sprintf("cannot split response key into composite key parts slice: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		if err := entry.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
-			message := fmt.Sprintf("cannot fill deal key from composite key parts: %s", err.Error())
-			logger.Error(message)
-			return shim.Error(message)
-		}
-
-		if (creator == entry.Value.Borrower || creator == entry.Value.Lender) && deal.timePeriodFrom <= entry.Value.Timestamp &&
-			deal.timePeriodTo >= entry.Value.Timestamp{
-			entries = append(entries, entry)
-		}
-
-		if bytes, err := json.Marshal(entry); err == nil {
-			logger.Debug("Entry: " + string(bytes))
-		}
-
-	}
-
-	result, err := json.Marshal(entries)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
 	logger.Debug("Result: " + string(result))
 
 	logger.Info("MarketChaincode.queryDealsCreatorByTime exited without errors")
