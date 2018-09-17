@@ -35,12 +35,13 @@ type DealValue struct {
 	Amount    float32      `json:"amount"`
 	Rate      float32      `json:"rate"`
 	Timestamp int64   	   `json:"timestamp"`
-	Members   MembersValue `json:"members"`
+	Borrower  string  	   `json:"borrower"`
+	Lender    string  	   `json:"lender"`
 }
 
 type Deal struct {
 	Key   DealKey       `json:"key"`
-	Value DealValue `json:"value"`
+	Value DealValue     `json:"value"`
 }
 
 func (deal *DealPublic) FillFromCompositeKeyParts(compositeKeyParts []string) error {

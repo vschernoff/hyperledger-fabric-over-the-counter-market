@@ -27,6 +27,13 @@ var collectionDealPrivate = map [lenderT]map[borrowerT]string{
 	},
 }
 
+type Collection struct{
+	Name    string `json:"name"`
+	Policy  string `json:"policy"`
+}
+
+var CollectionConfig = "[ { \"name\": \"a-b-Deals\", \"policy\": \"OR('aMSP.member', 'bMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 }, { \"name\": \"a-c-Deals\", \"policy\": \"OR('aMSP.member','cMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 }, { \"name\": \"b-c-Deals\", \"policy\": \"OR('bMSP.member', 'cMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 } ]"
+
 type DealPrivateValue struct {
 	Borrower  string  	  `json:"borrower"`
 	Lender    string  	  `json:"lender"`
@@ -35,6 +42,19 @@ type DealPrivateValue struct {
 type DealPrivate struct {
 	Key       DealKey   `json:"key"`
 	Value     DealPrivateValue `json:"value"`
+}
+
+func (deal *DealPrivate) GetCollectionsFromCreator(ledgerValue []byte) error {
+
+	Collections := []Collection{}
+
+	if err := json.Unmarshal(ledgerValue, &Collections); err != nil {
+		return err
+	} else {
+		//Parsing Collections
+
+		return nil
+	}
 }
 
 func (deal *DealPrivate) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
@@ -49,23 +69,23 @@ func (deal *DealPrivate) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) erro
 	}
 
 	// === Save members to state ===
-	logger.Debug("Collection name: " + string(collectionDealPrivate[lenderT(deal.Value.Lender)][borrowerT(members.Value.Borrower)]))
+	logger.Debug("Collection name: " + string(collectionDealPrivate[lenderT(deal.Value.Lender)][borrowerT(deal.Value.Borrower)]))
 
-	if err = stub.PutPrivateData(string(collectionDealPrivate[lenderT(members.Value.Lender)][borrowerT(members.Value.Borrower)]), compositeKey, value); err != nil {
+	if err = stub.PutPrivateData(string(collectionDealPrivate[lenderT(deal.Value.Lender)][borrowerT(deal.Value.Borrower)]), compositeKey, value); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (members *DealPrivate) ToCompositeKey(stub shim.ChaincodeStubInterface) (string, error) {
+func (deal *DealPrivate) ToCompositeKey(stub shim.ChaincodeStubInterface) (string, error) {
 	compositeKeyParts := []string {
-		members.Key.ID,
+		deal.Key.ID,
 	}
 
 	return stub.CreateCompositeKey(dealPrivateIndex, compositeKeyParts)
 }
 
-func (members *DealPrivate) ToLedgerValue() ([]byte, error) {
-	return json.Marshal(members.Value)
+func (deal *DealPrivate) ToLedgerValue() ([]byte, error) {
+	return json.Marshal(deal.Value)
 }

@@ -303,7 +303,7 @@ func (t *MarketChaincode) makeDeal(stub shim.ChaincodeStubInterface, args []stri
 		lender, borrower = creator, bid.Value.Creator
 	}
     ID := uuid.Must(uuid.NewV4()).String()
-	deal := DealPublic {
+	dealPublic := DealPublic {
 		Key: DealKey {
 			ID: ID,
 		},
@@ -314,22 +314,22 @@ func (t *MarketChaincode) makeDeal(stub shim.ChaincodeStubInterface, args []stri
 		},
 	}
 
-	members := Members{
-		Key: MembersKey {
+	dealPrivate := DealPrivate{
+		Key: DealKey {
 			ID: ID,
 		},
-		Value: MembersValue {
+		Value: DealPrivateValue {
 			Borrower: borrower,
 			Lender  : lender,
 		},
 	}
 
-	if bytes, err := json.Marshal(deal); err == nil {
-		logger.Debug("Deal: " + string(bytes))
+	if bytes, err := json.Marshal(dealPublic); err == nil {
+		logger.Debug("Deal Public: " + string(bytes))
 	}
 
-	if bytes, err := json.Marshal(members); err == nil {
-		logger.Debug("Members: " + string(bytes))
+	if bytes, err := json.Marshal(dealPrivate); err == nil {
+		logger.Debug("Deal Private: " + string(bytes))
 	}
 
 	if err := bid.UpdateOrInsertIn(stub); err != nil {
@@ -338,13 +338,13 @@ func (t *MarketChaincode) makeDeal(stub shim.ChaincodeStubInterface, args []stri
 		return pb.Response{Status: 500, Message: message}
 	}
 
-	if err := deal.UpdateOrInsertIn(stub); err != nil {
+	if err := dealPublic.UpdateOrInsertIn(stub); err != nil {
 		message := fmt.Sprintf("persistence error: %s", err.Error())
 		logger.Error(message)
 		return pb.Response{Status: 500, Message: message}
 	}
 
-	if err := members.UpdateOrInsertIn(stub); err != nil {
+	if err := dealPrivate.UpdateOrInsertIn(stub); err != nil {
 		message := fmt.Sprintf("persistence error: %s", err.Error())
 		logger.Error(message)
 		return pb.Response{Status: 500, Message: message}
@@ -502,7 +502,7 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 	}
 	defer it.Close()
 
-	entries := []DealPublic{}
+	entries := []Deal{}
 	for it.HasNext() {
 		response, err := it.Next()
 		if err != nil {
@@ -513,10 +513,12 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 
 		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
 
-		entry := DealPublic{}
+		entry := Deal{}
+		entryPublic := DealPublic{}
+		entryPrivate := DealPublic{}
 
-		if err := entry.FillFromLedgerValue(response.Value); err != nil {
-			message := fmt.Sprintf("cannot fill deal value from response value: %s", err.Error())
+		if err := entryPublic.FillFromLedgerValue(response.Value); err != nil {
+			message := fmt.Sprintf("cannot fill deal public value from response value: %s", err.Error())
 			logger.Error(message)
 			return shim.Error(message)
 		}
@@ -528,8 +530,8 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 			return shim.Error(message)
 		}
 
-		if err := entry.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
-			message := fmt.Sprintf("cannot fill deal key from composite key parts: %s", err.Error())
+		if err := entryPublic.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
+			message := fmt.Sprintf("cannot fill public deal key from composite key parts: %s", err.Error())
 			logger.Error(message)
 			return shim.Error(message)
 		}
@@ -592,7 +594,7 @@ func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterfa
 	}
 	defer it.Close()
 
-	entries := []DealFull{}
+	entries := []Deal{}
 
 	for it.HasNext() {
 		response, err := it.Next()
