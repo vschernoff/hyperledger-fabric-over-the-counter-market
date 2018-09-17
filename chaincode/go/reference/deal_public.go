@@ -86,7 +86,7 @@ func (deal *DealPublic) ExistsIn(stub shim.ChaincodeStubInterface) bool {
 		return false
 	}
 
-	if data, err := stub.GetPrivateData("collectionDeals", compositeKey); err != nil || data == nil {
+	if data, err := stub.GetState(compositeKey); err != nil || data == nil {
 		return false
 	}
 
@@ -99,7 +99,7 @@ func (deal *DealPublic) LoadFrom(stub shim.ChaincodeStubInterface) error {
 		return err
 	}
 
-	data, err := stub.GetPrivateData("collectionDeals", compositeKey)
+	data, err := stub.GetState(compositeKey)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (deal *DealPublic) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error
 	}
 
 	// === Save deal to state ===
-	if err = stub.PutPrivateData("collectionDeals", compositeKey, value); err != nil {
+	if err = stub.PutState(compositeKey, value); err != nil {
 		return err
 	}
 
