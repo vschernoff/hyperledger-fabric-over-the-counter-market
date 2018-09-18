@@ -1,40 +1,17 @@
 package main
 
 import (
-	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"encoding/json"
-	"fmt"
-	"strings"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
 const (
 	collectionsIndex = "Collections"
 )
 
-//type lenderT   string;
-//type borrowerT string;
-
-//var collectionDealPrivate = map [lenderT]map[borrowerT]string{
-//	"a": {
-//		"b" : "abDeals",
-//		"c" : "acDeals",
-//	},
-//	"b": {
-//		"a" : "abDeals",
-//		"c" : "bcDeals",
-//	},
-//	"c": {
-//		"a" : "acDeals",
-//		"b" : "bcDeals",
-//	},
-//}
-type DealKey struct {
-	ID string `json:"id"`
-}
-
-type DealPrivateValue struct {
-	Borrower  string  	  `json:"borrower"`
-	Lender    string  	  `json:"lender"`
+type CollectionFromConfig struct{
+	Name    string `json:"name"`
+	Policy  string `json:"policy"`
 }
 
 type Collection struct {
@@ -42,77 +19,72 @@ type Collection struct {
 }
 
 type Collections struct {
-	Org         string       `json:"org"`
-	Collections []Collection `json:"collections"`
+	OrgName          string            `json:"org"`
+	ListCollections  []Collection      `json:"collections"`
 }
 
-type CollectionFromConfig struct{
-	Name    string `json:"name"`
-	Policy  string `json:"policy"`
-}
-
-var CollectionConfig = "[ { \"name\": \"a-b-Deals\", \"policy\": \"OR('aMSP.member', 'bMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 }, { \"name\": \"a-c-Deals\", \"policy\": \"OR('aMSP.member','cMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 }, { \"name\": \"b-c-Deals\", \"policy\": \"OR('bMSP.member', 'cMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 } ]"
-
-func (collection *Collection) PutCollections(stub shim.ChaincodeStubInterface, CollectionConfig string) error {
-
-	var Entries []string
-	CollectionsFromConfig := []CollectionFromConfig{}
-
-	creator, err := GetCreatorOrganization(stub)
-	if err != nil {
-		message := fmt.Sprintf("cannot obtain creator's name from the certificate: %s", err.Error())
-		logger.Error(message)
-		return err
-	}
-
-	logger.Debug("Creator: " + creator)
-
-
-	if err := json.Unmarshal([]byte(CollectionConfig), &CollectionsFromConfig); err != nil {
-		return err
-	} else {
-		for _, Col := range CollectionsFromConfig{
-			ok := strings.Contains(string(Col.Policy), string(creator)+"MSP.member")
-			if ok{
-			Entries = append(Entries, Col.Name)
-			}
-		}
-		if err = stub.PutState(compositeKey, json.Marshal(Capabilities)); err != nil {
-			return err
-		}
-		return nil
-	}
-}
-
-func (deal *DealPrivate) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
-	compositeKey, err := deal.ToCompositeKey(stub)
+func (col *Collections) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
+	compositeKey, err := col.ToCompositeKey(stub)
 	if err != nil {
 		return err
 	}
 
-	value, err := deal.ToLedgerValue()
+	value, err := col.ToLedgerValue()
 	if err != nil {
 		return err
 	}
 
-	// === Save members to state ===
-	logger.Debug("Collection name: " + string(collectionDealPrivate[lenderT(deal.Value.Lender)][borrowerT(deal.Value.Borrower)]))
-
-	if err = stub.PutPrivateData(string(collectionDealPrivate[lenderT(deal.Value.Lender)][borrowerT(deal.Value.Borrower)]), compositeKey, value); err != nil {
+	// === Save collections to state ===
+	if err = stub.PutState(compositeKey, value); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (deal *DealPrivate) ToCompositeKey(stub shim.ChaincodeStubInterface) (string, error) {
+func (col *Collections) ToCompositeKey(stub shim.ChaincodeStubInterface) (string, error) {
 	compositeKeyParts := []string {
-		deal.Key.ID,
+		col.OrgName,
 	}
 
-	return stub.CreateCompositeKey(dealPrivateIndex, compositeKeyParts)
+	return stub.CreateCompositeKey(collectionsIndex, compositeKeyParts)
 }
 
-func (deal *DealPrivate) ToLedgerValue() ([]byte, error) {
-	return json.Marshal(deal.Value)
+func (collections *Collections) ToLedgerValue() ([]byte, error) {
+	return json.Marshal(collections.ListCollections)
+}
+
+func (col *Collections) ExistsIn(stub shim.ChaincodeStubInterface) bool {
+	compositeKey, err := col.ToCompositeKey(stub)
+	if err != nil {
+		return false
+	}
+
+	if data, err := stub.GetState(compositeKey); err != nil || data == nil {
+		return false
+	}
+
+	return true
+}
+
+func (col *Collections) LoadFrom(stub shim.ChaincodeStubInterface) error {
+	compositeKey, err := col.ToCompositeKey(stub)
+	if err != nil {
+		return err
+	}
+
+	data, err := stub.GetState(compositeKey)
+	if err != nil {
+		return err
+	}
+
+	return col.FillFromLedgerValue(data)
+}
+
+func (col *Collections) FillFromLedgerValue(ledgerValue []byte) error {
+	if err := json.Unmarshal(ledgerValue, &col.ListCollections); err != nil {
+		return err
+	} else {
+		return nil
+	}
 }
