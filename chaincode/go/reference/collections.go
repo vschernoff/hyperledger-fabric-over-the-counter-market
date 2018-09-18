@@ -9,18 +9,9 @@ const (
 	collectionsIndex = "Collections"
 )
 
-type CollectionFromConfig struct{
-	Name    string `json:"name"`
-	Policy  string `json:"policy"`
-}
-
-type Collection struct {
-	Name        string   `json:"name"`
-}
-
 type Collections struct {
-	OrgName          string            `json:"org"`
-	ListCollections  []Collection      `json:"collections"`
+	OrganizationName     string      `json:"organizationName"`
+	AvailableCollections []string    `json:"availableCollections"`
 }
 
 func (col *Collections) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
@@ -44,14 +35,14 @@ func (col *Collections) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error
 
 func (col *Collections) ToCompositeKey(stub shim.ChaincodeStubInterface) (string, error) {
 	compositeKeyParts := []string {
-		col.OrgName,
+		col.OrganizationName,
 	}
 
 	return stub.CreateCompositeKey(collectionsIndex, compositeKeyParts)
 }
 
-func (collections *Collections) ToLedgerValue() ([]byte, error) {
-	return json.Marshal(collections.ListCollections)
+func (col *Collections) ToLedgerValue() ([]byte, error) {
+	return json.Marshal(col.AvailableCollections)
 }
 
 func (col *Collections) ExistsIn(stub shim.ChaincodeStubInterface) bool {
@@ -82,7 +73,7 @@ func (col *Collections) LoadFrom(stub shim.ChaincodeStubInterface) error {
 }
 
 func (col *Collections) FillFromLedgerValue(ledgerValue []byte) error {
-	if err := json.Unmarshal(ledgerValue, &col.ListCollections); err != nil {
+	if err := json.Unmarshal(ledgerValue, &col.AvailableCollections); err != nil {
 		return err
 	} else {
 		return nil
