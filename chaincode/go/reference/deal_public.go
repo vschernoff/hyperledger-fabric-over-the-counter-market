@@ -125,3 +125,5 @@ func (deal *DealPublic) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error
 
 	return nil
 }
+
+

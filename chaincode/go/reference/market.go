@@ -11,6 +11,8 @@ import (
 	"github.com/satori/go.uuid"
 	"strings"
 	"time"
+	"errors"
+	"strconv"
 )
 
 var logger = shim.NewLogger("MarketChaincode")
@@ -21,9 +23,12 @@ type MarketChaincode struct {
 
 func (t *MarketChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	logger.Debug("Init")
-	var CollectionConfig = "[ { \"name\": \"a-b-Deals\", \"policy\": \"OR('aMSP.member', 'bMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 }, { \"name\": \"a-c-Deals\", \"policy\": \"OR('aMSP.member','cMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 }, { \"name\": \"b-c-Deals\", \"policy\": \"OR('bMSP.member', 'cMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 } ]"
 
-	if err := InitCollections(stub, CollectionConfig); err != nil {
+	_, args := stub.GetFunctionAndParameters()
+
+	//var CollectionConfig = "[ { \"name\": \"a-b-Deals\", \"policy\": \"OR('aMSP.member', 'bMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 }, { \"name\": \"a-c-Deals\", \"policy\": \"OR('aMSP.member','cMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 }, { \"name\": \"b-c-Deals\", \"policy\": \"OR('bMSP.member', 'cMSP.member')\", \"requiredPeerCount\": 0, \"maxPeerCount\": 3, \"blockToLive\":3 } ]"
+
+	if err := InitCollections(stub, args); err != nil {
 		message := fmt.Sprintf("cannot init collections: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
@@ -51,8 +56,8 @@ func (t *MarketChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.queryBidsCreator(stub, args)
 	} else if function == "queryDeals" {
 		return t.queryDeals(stub, args)
-	//} else if function == "queryDealsCreatorByTime" {
-	//	return t.queryDealsCreatorByTime(stub, args)
+	} else if function == "queryDealsCreatorByTime" {
+		return t.queryDealsCreatorByTime(stub, args)
 	}
 
 	return pb.Response{Status:403, Message:"Invalid invoke function name."}
@@ -123,6 +128,7 @@ func (t *MarketChaincode) editBid(stub shim.ChaincodeStubInterface, args []strin
         logger.Error(message)
         return shim.Error(message)
     }
+
     bidToUpdate.Key.ID = bid.Key.ID
 	if err := bid.FillFromArguments(args[1:]); err != nil {
 		message := fmt.Sprintf("cannot fill a bid from arguments: %s", err.Error())
@@ -501,7 +507,7 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 	logger.Info("MarketChaincode.queryDeals is running")
 	logger.Debug("MarketChaincode.queryDeals")
 
-	it, err := stub.GetPrivateDataByPartialCompositeKey("collectionDeals", dealIndex, []string{})
+	it, err := stub.GetStateByPartialCompositeKey(dealIndex, []string{})
 	if err != nil {
 		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", dealIndex, err.Error())
 		logger.Error(message)
@@ -522,7 +528,7 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 
 		entry := Deal{}
 		entryPublic := DealPublic{}
-		//entryPrivate := DealPublic{}
+		entryPrivate := DealPrivate{}
 
 		if err := entryPublic.FillFromLedgerValue(response.Value); err != nil {
 			message := fmt.Sprintf("cannot fill deal public value from response value: %s", err.Error())
@@ -547,12 +553,21 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 			logger.Debug("Entry: " + string(bytes))
 		}
 
+		Borrower := string("")
+		Lender   := string("")
+
+		entryPrivate.Key.ID = entryPublic.Key.ID
+		if err := entryPrivate.GetValuePrivateDeal(stub); err == nil{
+			Borrower = entryPrivate.Value.Borrower
+			Lender   = entryPrivate.Value.Lender
+		}
+
 		entry.Key             = entryPublic.Key
 		entry.Value.Amount    = entryPublic.Value.Amount
 		entry.Value.Rate 	  = entryPublic.Value.Rate
 		entry.Value.Timestamp = entryPublic.Value.Timestamp
-		entry.Value.Borrower  = string("not available")
-		entry.Value.Lender    = string("not available")
+		entry.Value.Borrower  = Borrower
+		entry.Value.Lender    = Lender
 
 		entries = append(entries, entry)
 	}
@@ -569,112 +584,116 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 }
 
 
-//func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-//	logger.Info("MarketChaincode.queryDealsCreatorByTime is running")
-//	logger.Debug("MarketChaincode.queryDealsCreatorByTime")
-//
-//	if len(args) < timeBasicArgumentsNumber {
-//		message := fmt.Sprintf("insufficient number of arguments: expected %d, got %d",
-//			timeBasicArgumentsNumber, len(args))
-//		logger.Error(message)
-//		return shim.Error(message)
-//	}
-//
-//	time := TimePeriod{}
-//	if err := time.FillFromArguments(args[0:]); err != nil {
-//		message := fmt.Sprintf("cannot fill a deal from arguments: %s", err.Error())
-//		logger.Error(message)
-//		return shim.Error(message)
-//	}
-//
-//	logger.Debug("TimePeriodFrom: " + strconv.FormatInt(time.From,10))
-//	logger.Debug("TimePeriodTo: " + strconv.FormatInt(time.To,10))
-//
-//	creator, err := GetCreatorOrganization(stub)
-//	if err != nil {
-//		message := fmt.Sprintf("cannot obtain creator's name from the certificate: %s", err.Error())
-//		logger.Error(message)
-//		return shim.Error(message)
-//	}
-//
-//	logger.Debug("Creator: " + creator)
-//
-//	//it, err := stub.GetPrivateDataByPartialCompositeKey(string(collectionMembers[lenderT(members.Value.Lender)][borrowerT(members.Value.Borrower)]), dealIndex, []string{})
-//	it, err := stub.GetPrivateDataByPartialCompositeKey("collectionDeals", dealIndex, []string{})
-//	if err != nil {
-//		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", dealIndex, err.Error())
-//		logger.Error(message)
-//		return shim.Error(message)
-//	}
-//	defer it.Close()
-//
-//	entries := []Deal{}
-//
-//	for it.HasNext() {
-//		response, err := it.Next()
-//		if err != nil {
-//			message := fmt.Sprintf("unable to get an element next to a query iterator: %s", err.Error())
-//			logger.Error(message)
-//			return shim.Error(message)
-//		}
-//
-//		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
-//
-//		entry := DealPublic{}
-//		members := Members{}
-//
-//		if err := entry.FillFromLedgerValue(response.Value); err != nil {
-//			message := fmt.Sprintf("cannot fill deal value from response value: %s", err.Error())
-//			logger.Error(message)
-//			return shim.Error(message)
-//		}
-//
-//		_, compositeKeyParts, err := stub.SplitCompositeKey(response.Key)
-//		if err != nil {
-//			message := fmt.Sprintf("cannot split response key into composite key parts slice: %s", err.Error())
-//			logger.Error(message)
-//			return shim.Error(message)
-//		}
-//
-//		if err := entry.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
-//			message := fmt.Sprintf("cannot fill deal key from composite key parts: %s", err.Error())
-//			logger.Error(message)
-//			return shim.Error(message)
-//		}
-//
-//		members.Key.ID =
-//		creatorCollections := collectionMembers[lenderT(creator)]
-//
-//		for k := range creatorCollections {
-//
-//			logger.Debug(fmt.Sprintf("Get private collection: %s", string(creatorCollections[k])))
-//			members, err := stub.GetPrivateData(string(creatorCollections[k]), compositeKey)
-//			compositeKey, err := members.ToCompositeKey(stub)
-//
-//			//if (creator == entry.Value.Borrower || creator == entry.Value.Lender) && time.From <= entry.Value.Timestamp &&
-//			//	time.To >= entry.Value.Timestamp{
-//			//	entries = append(entries, entry)
-//			//}
-//		}
-//
-//		if bytes, err := json.Marshal(entry); err == nil {
-//
-//			logger.Debug("Entry: " + string(bytes))
-//		}
-//
-//	}
-//
-//	result, err := json.Marshal(entries)
-//	if err != nil {
-//		return shim.Error(err.Error())
-//	}
-//	logger.Debug("Result: " + string(result))
-//
-//	logger.Info("MarketChaincode.queryDealsCreatorByTime exited without errors")
-//	logger.Debug("Success: MarketChaincode.queryDealsCreatorByTime")
-//	return shim.Success(result)
-//}
-//
+func (t *MarketChaincode) queryDealsCreatorByTime(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	logger.Info("MarketChaincode.queryDealsCreatorByTime is running")
+	logger.Debug("MarketChaincode.queryDealsCreatorByTime")
+
+	if len(args) < timeBasicArgumentsNumber {
+		message := fmt.Sprintf("insufficient number of arguments: expected %d, got %d",
+			timeBasicArgumentsNumber, len(args))
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	time := TimePeriod{}
+	if err := time.FillFromArguments(args[0:]); err != nil {
+		message := fmt.Sprintf("cannot fill a deal from arguments: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("TimePeriodFrom: " + strconv.FormatInt(time.From,10))
+	logger.Debug("TimePeriodTo: " + strconv.FormatInt(time.To,10))
+
+	creator, err := GetCreatorOrganization(stub)
+	if err != nil {
+		message := fmt.Sprintf("cannot obtain creator's name from the certificate: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("Creator: " + creator)
+
+	it, err := stub.GetStateByPartialCompositeKey(dealIndex, []string{})
+	if err != nil {
+		message := fmt.Sprintf("unable to get state by partial composite key %s: %s", dealIndex, err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+	defer it.Close()
+
+	entries := []Deal{}
+	for it.HasNext() {
+		response, err := it.Next()
+		if err != nil {
+			message := fmt.Sprintf("unable to get an element next to a query iterator: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		logger.Debug(fmt.Sprintf("Response: {%s, %s}", response.Key, string(response.Value)))
+
+		entry := Deal{}
+		entryPublic := DealPublic{}
+		entryPrivate := DealPrivate{}
+
+		if err := entryPublic.FillFromLedgerValue(response.Value); err != nil {
+			message := fmt.Sprintf("cannot fill deal public value from response value: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		_, compositeKeyParts, err := stub.SplitCompositeKey(response.Key)
+		if err != nil {
+			message := fmt.Sprintf("cannot split response key into composite key parts slice: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		if err := entryPublic.FillFromCompositeKeyParts(compositeKeyParts); err != nil {
+			message := fmt.Sprintf("cannot fill public deal key from composite key parts: %s", err.Error())
+			logger.Error(message)
+			return shim.Error(message)
+		}
+
+		if bytes, err := json.Marshal(entryPublic); err == nil {
+			logger.Debug("Entry: " + string(bytes))
+		}
+
+		Borrower := string("")
+		Lender   := string("")
+
+		entryPrivate.Key.ID = entryPublic.Key.ID
+		if err := entryPrivate.GetValuePrivateDeal(stub); err == nil{
+			Borrower = entryPrivate.Value.Borrower
+			Lender   = entryPrivate.Value.Lender
+		}
+
+		entry.Key             = entryPublic.Key
+		entry.Value.Amount    = entryPublic.Value.Amount
+		entry.Value.Rate 	  = entryPublic.Value.Rate
+		entry.Value.Timestamp = entryPublic.Value.Timestamp
+		entry.Value.Borrower  = Borrower
+		entry.Value.Lender    = Lender
+
+		if (creator == entry.Value.Borrower || creator == entry.Value.Lender) && time.From <= entry.Value.Timestamp &&
+			time.To >= entry.Value.Timestamp{
+			entries = append(entries, entry)
+		}
+	}
+
+	result, err := json.Marshal(entries)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	logger.Debug("Result: " + string(result))
+
+	logger.Info("MarketChaincode.queryDeals exited without errors")
+	logger.Debug("Success: MarketChaincode.queryDeals")
+	return shim.Success(result)
+}
+
 func getOrganization(certificate []byte) (string, error) {
 	data := certificate[strings.Index(string(certificate), "-----") : strings.LastIndex(string(certificate), "-----")+5]
 	block, _ := pem.Decode([]byte(data))
@@ -694,35 +713,106 @@ func GetCreatorOrganization(stub shim.ChaincodeStubInterface) (string, error) {
 	return getOrganization(certificate)
 }
 
-func InitCollections(stub shim.ChaincodeStubInterface, CollectionConfig string) (error) {
+func InitCollections(stub shim.ChaincodeStubInterface, args []string) (error) {
 
-	CollectionsFromConfig := []CollectionFromConfig{}
-	var Col Collections
+	// 0
+	// ArrayInJSON
+	type Organization struct{
+		Name    string `json:"name"`
+	}
+	AllOrganizations := []Organization{}
 
-	creator := "a"
+	// ==== Input sanitation ====
+	logger.Debug("Start init Collections")
+	if len(args[0]) == 0 {
+		return errors.New("1st argument must be a non-empty string")
+	}
 
-	if err := json.Unmarshal([]byte(CollectionConfig), &CollectionsFromConfig); err != nil {
-		return err
-	} else {
-		for _, i := range CollectionsFromConfig{
-			ok := strings.Contains(string(i.Policy), string(creator)+"MSP.member")
-			if ok{
-				Col.ListCollections = append(Col.ListCollections, Collection{i.Name})
-			}
+	ArrayInJSON := string(args[0])
+
+	ArrayInJSON = strings.Replace(ArrayInJSON, "\\", "", -1)
+
+	logger.Debug("Received JSON: " + ArrayInJSON)
+
+	if err := json.Unmarshal([]byte(ArrayInJSON), &AllOrganizations); err != nil {
+		message := fmt.Sprintf("Failed to convert JSON to slice of struct: %s", err.Error())
+		logger.Error(message)
+		return errors.New(message)
+	}
+
+	fmt.Println(AllOrganizations)
+
+	//Search of All Organizations
+	for indexOrg, Org := range AllOrganizations{
+		logger.Debug("Organization name: " + string(Org.Name))
+		Col := Collections{}
+		Col.OrganizationName = string(Org.Name)
+		//The search of elements above
+		elementsAbove := AllOrganizations[:indexOrg]
+		for _, orgAbove := range  elementsAbove {
+			collectionName := string(orgAbove.Name+"-"+Org.Name+"-"+"Deals")
+			Col.AvailableCollections = append(Col.AvailableCollections, collectionName)
+		}
+		//The search of elements bellow
+		elementsBellow := AllOrganizations[indexOrg+1:]
+		for _, orgBellow := range  elementsBellow {
+			collectionName := string(Org.Name+"-"+orgBellow.Name+"-"+"Deals")
+			Col.AvailableCollections = append(Col.AvailableCollections, collectionName)
 		}
 
-		if bytes, err := json.Marshal(Col.ListCollections); err == nil {
-			logger.Debug("Bid: " + string(bytes))
+		if bytes, err := json.Marshal(Col.AvailableCollections); err == nil {
+			logger.Debug("Collections: " + string(bytes))
 		}
-
+		//Put available collections for the organization in the ledger
 		if err := Col.UpdateOrInsertIn(stub); err != nil {
 			message := fmt.Sprintf("persistence error: %s", err.Error())
 			logger.Error(message)
 			return err
 		}
-
-		return nil
 	}
+	return nil
+}
+
+func (deal *DealPrivate) GetValuePrivateDeal(stub shim.ChaincodeStubInterface) ( error ) {
+
+	Col := Collections{}
+
+	creator, err := GetCreatorOrganization(stub)
+	if err != nil {
+		message := fmt.Sprintf("cannot obtain creator's name from the certificate: %s", err.Error())
+		logger.Error(message)
+		return errors.New(message)
+	}
+	Col.OrganizationName = creator
+
+	if !Col.ExistsIn(stub) {
+		message := fmt.Sprintf("available collections for organization %s not found", Col.OrganizationName)
+		logger.Error(message)
+		return errors.New(message)
+	}
+
+	if err := Col.LoadFrom(stub); err != nil {
+		message := fmt.Sprintf("cannot load existing collections: %s", err.Error())
+		logger.Error(message)
+		return errors.New(message)
+	}
+
+	for _, Collection := range Col.AvailableCollections{
+
+		if deal.ExistsIn(stub, Collection) {
+			if err := deal.LoadFrom(stub, Collection); err != nil {
+				message := fmt.Sprintf("cannot load existing PrivateDeal: %s", err.Error())
+				logger.Error(message)
+				return errors.New(message)
+			}
+			return nil
+		}
+
+	}
+
+	message := fmt.Sprintf("this Organization: %s can not get value of PrivateDeal with ID: %s", creator, deal.Key.ID)
+	logger.Debug(message)
+	return errors.New(message)
 }
 
 func main() {
