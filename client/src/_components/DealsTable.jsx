@@ -54,7 +54,7 @@ class DealsTable extends React.Component {
     return (
         <ReactTable
           columns={columns}
-          data={deals.items}
+          data={deals.items || []}
           className="-striped -highlight"
           defaultPageSize={10}
           minWidth={60}
