@@ -94,7 +94,7 @@ class OrdersTable extends React.Component {
     return (
       <ReactTable
         columns={columns}
-        data={orders.items}
+        data={orders.items || []}
         className="-striped -highlight"
         defaultPageSize={10}
         minWidth={60}
