@@ -1,4 +1,4 @@
-import {OrdersPage, DealsPage, HomePage, LoginPage, SummaryPage} from '../_pages';
+import {HomePage, LoginPage, SummaryPage} from '../_pages';
 
 export const publicRoutes = [{
   component: HomePage,
@@ -9,12 +9,6 @@ export const publicRoutes = [{
 }];
 
 export const privateRoutes = [{
-  component: DealsPage,
-  path: '/deals'
-}, {
-  component: OrdersPage,
-  path: '/bids'
-}, {
   component: SummaryPage,
   path: '/summary'
 }];
