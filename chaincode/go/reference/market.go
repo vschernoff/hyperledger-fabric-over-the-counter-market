@@ -13,6 +13,7 @@ import (
 	"time"
 	"errors"
 	"sort"
+	"strconv"
 )
 
 var logger = shim.NewLogger("MarketChaincode")
@@ -485,7 +486,7 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 	}
 
 	dealsPrivateDetails := []DealPrivateDetails{}
-	if err := json.Unmarshal(dealsBytes, dealsPrivateDetails); err != nil {
+	if err := json.Unmarshal(dealsPrivateDetailsBytes, dealsPrivateDetails); err != nil {
 		message := fmt.Sprintf("unable to unmarshal deals query result: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
@@ -511,6 +512,8 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 			entry.Value.Borrower = details.Borrower
 			entry.Value.Lender = details.Lender
 		}
+
+		result = append(result, entry)
 	}
 
 	resultBytes, err := json.Marshal(result)
@@ -522,64 +525,92 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 	return shim.Success(resultBytes)
 }
 
-// TODO: change filter function
-// TODO: change query logic
 func (t *MarketChaincode) queryDealsForCreatorByPeriod(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	//logger.Info("MarketChaincode.queryDealsForCreatorByPeriod is running")
-	//logger.Debug("MarketChaincode.queryDealsForCreatorByPeriod")
-	//
-	//if len(args) < timePeriodArgumentsNumber {
-	//	message := fmt.Sprintf("insufficient number of arguments: expected %d, got %d",
-	//		timePeriodArgumentsNumber, len(args))
-	//	logger.Error(message)
-	//	return shim.Error(message)
-	//}
-	//
-	//period := TimePeriod{}
-	//if err := period.FillFromArguments(args); err != nil {
-	//	message := fmt.Sprintf("cannot fill a time period from arguments: %s", err.Error())
-	//	logger.Error(message)
-	//	return shim.Error(message)
-	//}
-	//
-	//logger.Debug("TimePeriodFrom: " + strconv.FormatInt(period.From,10))
-	//logger.Debug("TimePeriodTo: " + strconv.FormatInt(period.To,10))
-	//
-	//creator, err := GetCreatorOrganization(stub)
-	//if err != nil {
-	//	message := fmt.Sprintf("cannot obtain creator's name from the certificate: %s", err.Error())
-	//	logger.Error(message)
-	//	return shim.Error(message)
-	//}
-	//
-	//logger.Debug("Creator: " + creator)
-	//
-	//filterByCreatorAndPeriod := func(data LedgerData) bool {
-	//	deal, ok := data.(*Deal)
-	//	if ok {
-	//		if deal.Value.Borrower == creator || deal.Value.Lender == creator {
-	//			if period.From <= deal.Value.Timestamp && period.To >= deal.Value.Timestamp {
-	//				return true
-	//			}
-	//		}
-	//	}
-	//
-	//	return false
-	//}
-	//
-	//result, err := Query(stub, dealIndex, []string{}, CreateDeal, filterByCreatorAndPeriod)
-	//if err != nil {
-	//	message := fmt.Sprintf("unable to perform query: %s", err.Error())
-	//	logger.Error(message)
-	//	return shim.Error(message)
-	//}
-	//
-	//logger.Debug("Result: " + string(result))
-	//
-	//logger.Info("MarketChaincode.queryDealsForCreatorByPeriod exited without errors")
-	//logger.Debug("Success: MarketChaincode.queryDealsForCreatorByPeriod")
-	//return shim.Success(result)
-	return shim.Success(nil)
+	logger.Info("MarketChaincode.queryDealsForCreatorByPeriod is running")
+	logger.Debug("MarketChaincode.queryDealsForCreatorByPeriod")
+
+	if len(args) < timePeriodArgumentsNumber {
+		message := fmt.Sprintf("insufficient number of arguments: expected %d, got %d",
+			timePeriodArgumentsNumber, len(args))
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	period := TimePeriod{}
+	if err := period.FillFromArguments(args); err != nil {
+		message := fmt.Sprintf("cannot fill a time period from arguments: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("TimePeriodFrom: " + strconv.FormatInt(period.From,10))
+	logger.Debug("TimePeriodTo: " + strconv.FormatInt(period.To,10))
+
+	creator, err := GetCreatorOrganization(stub)
+	if err != nil {
+		message := fmt.Sprintf("cannot obtain creator's name from the certificate: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("Creator: " + creator)
+
+	collectionsNames, err := getCollectionsNames(stub, creator)
+	if err != nil {
+		message := fmt.Sprintf("collection error: %s", err.Error())
+		logger.Error(message)
+		return pb.Response{Status: 500, Message: message}
+	}
+
+	dealsPrivateDetailsBytes, err := QueryPrivate(
+		stub, dealPrivateDetailsIndex, []string{}, CreateDealPrivateDetails, EmptyFilter, collectionsNames)
+	if err != nil {
+		message := fmt.Sprintf("unable to perform query: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("Deals details: " + string(dealsPrivateDetailsBytes))
+
+	dealsPrivateDetails := []DealPrivateDetails{}
+	if err := json.Unmarshal(dealsPrivateDetailsBytes, dealsPrivateDetails); err != nil {
+		message := fmt.Sprintf("unable to unmarshal deals query result: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	result := []dealQueryResult{}
+	for _, details := range dealsPrivateDetails {
+		deal := Deal{Key: details.Key}
+		if err := LoadFrom(stub, &deal); err != nil {
+			message := fmt.Sprintf("cannot load existing deal: %s", err.Error())
+			logger.Error(message)
+			return pb.Response{Status: 404, Message: message}
+		}
+
+		if period.From <= deal.Value.Timestamp && period.To >= deal.Value.Timestamp {
+			entry := dealQueryResult {
+				Key: details.Key,
+				Value: dealQueryResultValue {
+					Borrower:  details.Value.Borrower,
+					Lender:    details.Value.Lender,
+					Amount:    deal.Value.Amount,
+					Rate:      deal.Value.Rate,
+					Timestamp: deal.Value.Timestamp,
+				},
+			}
+			result = append(result, entry)
+		}
+
+	}
+
+	resultBytes, err := json.Marshal(result)
+
+	logger.Debug("Result: " + string(resultBytes))
+
+	logger.Info("MarketChaincode.queryDeals exited without errors")
+	logger.Debug("Success: MarketChaincode.queryDeals")
+	return shim.Success(resultBytes)
 }
 
 func getCollectionsNames(stub shim.ChaincodeStubInterface, creator string) ([]string, error) {
