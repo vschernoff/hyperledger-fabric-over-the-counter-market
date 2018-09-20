@@ -108,8 +108,13 @@ class SummaryPage extends React.Component {
     return (
       <div>
         <div className="row">
+          <div className="col col-form-label">
+            <button className="btn" onClick={this.refreshData}>Refresh <i className="fas fa-sync"/></button>
+          </div>
+        </div>
+        <div className="row">
           <div className="col">
-            <h3>Aftermarket clearing <button className="btn" onClick={this.refreshData}><i className="fas fa-sync"/></button></h3>
+            <h3>Aftermarket clearing</h3>
             {!!data.length && <ReactTable
               columns={clearingColumns}
               data={data}
@@ -132,7 +137,7 @@ class SummaryPage extends React.Component {
           </div>
 
           <div className="col">
-            <h3>Interest netting <button className="btn" onClick={this.refreshData}><i className="fas fa-sync"/></button></h3>
+            <h3>Interest netting</h3>
             {!!data.length && <ReactTable
               columns={interestColumns}
               data={data}

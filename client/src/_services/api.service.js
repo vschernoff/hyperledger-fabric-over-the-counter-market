@@ -1,4 +1,4 @@
-import {getHeaders, sendRequest} from '../_helpers/request';
+import {sendRequest} from '../_helpers/request';
 import {configService} from './config.service';
 
 //TODO get from config

@@ -479,14 +479,14 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 	logger.Debug("Deals details: " + string(dealsPrivateDetailsBytes))
 
 	deals := []Deal{}
-	if err := json.Unmarshal(dealsBytes, deals); err != nil {
+	if err := json.Unmarshal(dealsBytes, &deals); err != nil {
 		message := fmt.Sprintf("unable to unmarshal deals query result: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
 	}
 
 	dealsPrivateDetails := []DealPrivateDetails{}
-	if err := json.Unmarshal(dealsPrivateDetailsBytes, dealsPrivateDetails); err != nil {
+	if err := json.Unmarshal(dealsPrivateDetailsBytes, &dealsPrivateDetails); err != nil {
 		message := fmt.Sprintf("unable to unmarshal deals query result: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
@@ -573,7 +573,7 @@ func (t *MarketChaincode) queryDealsForCreatorByPeriod(stub shim.ChaincodeStubIn
 	logger.Debug("Deals details: " + string(dealsPrivateDetailsBytes))
 
 	dealsPrivateDetails := []DealPrivateDetails{}
-	if err := json.Unmarshal(dealsPrivateDetailsBytes, dealsPrivateDetails); err != nil {
+	if err := json.Unmarshal(dealsPrivateDetailsBytes, &dealsPrivateDetails); err != nil {
 		message := fmt.Sprintf("unable to unmarshal deals query result: %s", err.Error())
 		logger.Error(message)
 		return shim.Error(message)
