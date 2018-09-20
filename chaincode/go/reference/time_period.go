@@ -2,24 +2,24 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
+	"fmt"
 )
 
 const (
-	timeBasicArgumentsNumber = 2
+	timePeriodArgumentsNumber = 2
 )
 
 type TimePeriod struct {
-	From int64   `json:"timestamp"`
-	To int64     `json:"timestamp"`
+	From int64 `json:"timestamp"`
+	To   int64 `json:"timestamp"`
 }
 
-func (time *TimePeriod) FillFromArguments(args []string) error {
-	//0				  1
-	//timePeriodFrom  timePeriodTo
-	if len(args) < timeBasicArgumentsNumber {
-		return errors.New(fmt.Sprintf("arguments array must contain at least %d items", timeBasicArgumentsNumber))
+func (t *TimePeriod) FillFromArguments(args []string) error {
+	//0     1
+	//From  To
+	if len(args) < timePeriodArgumentsNumber {
+		return errors.New(fmt.Sprintf("arguments array must contain at least %d items", timePeriodArgumentsNumber))
 	}
 
 	timePeriodFrom, err := strconv.ParseInt(args[0],10, 64)
@@ -40,8 +40,8 @@ func (time *TimePeriod) FillFromArguments(args []string) error {
 		return errors.New("timePeriodTo must be larger than timePeriodFrom")
 	}
 
-	time.From = int64(timePeriodFrom)
-	time.To   = int64(timePeriodTo)
+	t.From = int64(timePeriodFrom)
+	t.To = int64(timePeriodTo)
 
 	return nil
 }

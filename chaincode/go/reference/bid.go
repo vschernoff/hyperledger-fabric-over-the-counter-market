@@ -47,6 +47,10 @@ type Bid struct {
 	Value BidValue `json:"value"`
 }
 
+func CreateBid() LedgerData {
+	return new(Bid)
+}
+
 func (bid *Bid) FillFromArguments(args []string) error {
 	if len(args) < bidBasicArgumentsNumber {
 		return errors.New(fmt.Sprintf("arguments array must contain at least %d items", bidBasicArgumentsNumber))
@@ -117,49 +121,3 @@ func (bid *Bid) ToCompositeKey(stub shim.ChaincodeStubInterface) (string, error)
 func (bid *Bid) ToLedgerValue() ([]byte, error) {
 	return json.Marshal(bid.Value)
 }
-
-func (bid *Bid) ExistsIn(stub shim.ChaincodeStubInterface) bool {
-	compositeKey, err := bid.ToCompositeKey(stub)
-	if err != nil {
-		return false
-	}
-
-	if data, err := stub.GetState( compositeKey); err != nil || data == nil {
-		return false
-	}
-
-	return true
-}
-
-func (bid *Bid) LoadFrom(stub shim.ChaincodeStubInterface) error {
-	compositeKey, err := bid.ToCompositeKey(stub)
-	if err != nil {
-		return err
-	}
-
-	data, err := stub.GetState(compositeKey)
-	if err != nil {
-		return err
-	}
-
-	return bid.FillFromLedgerValue(data)
-}
-
-func (bid *Bid) UpdateOrInsertIn(stub shim.ChaincodeStubInterface) error {
-	compositeKey, err := bid.ToCompositeKey(stub)
-	if err != nil {
-		return err
-	}
-
-	value, err := bid.ToLedgerValue()
-	if err != nil {
-		return err
-	}
-
-	if err = stub.PutState(compositeKey, value); err != nil {
-		return err
-	}
-
-	return nil
-}
-
