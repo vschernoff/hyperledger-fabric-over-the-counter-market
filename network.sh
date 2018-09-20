@@ -1291,7 +1291,7 @@ if [ "${MODE}" == "up" -a "${ORG}" == "" ]; then
   #Building array from Organizations
   JSON_ORG="";
   ARRAY_ORG=()
-  for org in ${ORG1} ${ORG2} ${ORG3}
+  for org in ${ORG3} ${ORG1} ${ORG2}
   do
     ARRAY_ORG+=("name" ${org})
   done

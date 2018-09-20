@@ -13,6 +13,7 @@ import (
 	"time"
 	"errors"
 	"strconv"
+	"sort"
 )
 
 var logger = shim.NewLogger("MarketChaincode")
@@ -740,23 +741,30 @@ func InitCollections(stub shim.ChaincodeStubInterface, args []string) (error) {
 		return errors.New(message)
 	}
 
+	var OnlyNamesOrgs = []string{}
+
+	for _, Org := range AllOrganizations{
+		OnlyNamesOrgs = append(OnlyNamesOrgs, Org.Name)
+	}
+
 	fmt.Println(AllOrganizations)
+	sort.Sort(sort.StringSlice(OnlyNamesOrgs))
 
 	//Search of All Organizations
-	for indexOrg, Org := range AllOrganizations{
-		logger.Debug("Organization name: " + string(Org.Name))
+	for indexOrg, Org := range OnlyNamesOrgs{
+		logger.Debug("Organization name: " + string(Org))
 		Col := Collections{}
-		Col.OrganizationName = string(Org.Name)
+		Col.OrganizationName = string(Org)
 		//The search of elements above
-		elementsAbove := AllOrganizations[:indexOrg]
+		elementsAbove := OnlyNamesOrgs[:indexOrg]
 		for _, orgAbove := range  elementsAbove {
-			collectionName := string(orgAbove.Name+"-"+Org.Name+"-"+"Deals")
+			collectionName := string(orgAbove + "-" + Org + "-" + "Deals")
 			Col.AvailableCollections = append(Col.AvailableCollections, collectionName)
 		}
 		//The search of elements bellow
-		elementsBellow := AllOrganizations[indexOrg+1:]
+		elementsBellow := OnlyNamesOrgs[indexOrg+1:]
 		for _, orgBellow := range  elementsBellow {
-			collectionName := string(Org.Name+"-"+orgBellow.Name+"-"+"Deals")
+			collectionName := string(Org + "-" + orgBellow + "-" + "Deals")
 			Col.AvailableCollections = append(Col.AvailableCollections, collectionName)
 		}
 
