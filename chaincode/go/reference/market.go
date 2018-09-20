@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 	"errors"
+	"sort"
 )
 
 var logger = shim.NewLogger("MarketChaincode")
@@ -35,6 +36,14 @@ type dealQueryResult struct {
 
 func (t *MarketChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	logger.Debug("Init")
+
+	_, args := stub.GetFunctionAndParameters()
+
+	if err := InitCollections(stub, args); err != nil {
+		message := fmt.Sprintf("cannot init collections: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
 
 	return shim.Success(nil)
 }
@@ -130,6 +139,7 @@ func (t *MarketChaincode) editBid(stub shim.ChaincodeStubInterface, args []strin
         logger.Error(message)
         return shim.Error(message)
     }
+
     bidToUpdate.Key.ID = bid.Key.ID
 	if err := bid.FillFromArguments(args[1:]); err != nil {
 		message := fmt.Sprintf("cannot fill a bid from arguments: %s", err.Error())
@@ -620,6 +630,75 @@ func GetCreatorOrganization(stub shim.ChaincodeStubInterface) (string, error) {
 		return "", err
 	}
 	return getOrganization(certificate)
+}
+
+func InitCollections(stub shim.ChaincodeStubInterface, args []string) (error) {
+	// 0
+	// arrayInJSON
+	type Organization struct{
+		Name    string `json:"name"`
+	}
+	allOrganizations := []Organization{}
+
+	// ==== Input sanitation ====
+	logger.Debug("Start init Collections")
+	if len(args[0]) == 0 {
+		return errors.New("1st argument must be a non-empty string")
+	}
+
+	arrayInJSON := string(args[0])
+
+	arrayInJSON = strings.Replace(arrayInJSON, "\\", "", -1)
+
+	logger.Debug("Received JSON: " + arrayInJSON)
+
+	if err := json.Unmarshal([]byte(arrayInJSON), &allOrganizations); err != nil {
+		message := fmt.Sprintf("Failed to convert JSON to slice of struct: %s", err.Error())
+		logger.Error(message)
+		return errors.New(message)
+	}
+
+	var orgNames = []string{}
+
+	for _, org := range allOrganizations {
+		orgNames = append(orgNames, org.Name)
+	}
+
+	fmt.Println(allOrganizations)
+	sort.Sort(sort.StringSlice(orgNames))
+
+	//Search of All Organizations
+	for indexOrg, org := range orgNames {
+		logger.Debug("Organization name: " + string(org))
+		collections := Collections{}
+		collections.OrganizationName = string(org)
+
+		//The search of elements above
+		elementsLeft := orgNames[:indexOrg]
+		for _, orgLeft := range elementsLeft {
+			collectionName := string(orgLeft + "-" + org + "-" + "Deals")
+			collections.AvailableCollections = append(collections.AvailableCollections, collectionName)
+		}
+
+		//The search of elements bellow
+		elementsRight := orgNames[indexOrg + 1:]
+		for _, orgRight := range elementsRight {
+			collectionName := string(org + "-" + orgRight + "-" + "Deals")
+			collections.AvailableCollections = append(collections.AvailableCollections, collectionName)
+		}
+
+		if bytes, err := json.Marshal(collections.AvailableCollections); err == nil {
+			logger.Debug("Collections: " + string(bytes))
+		}
+
+		//Put available collections for the organization in the ledger
+		if err := UpdateOrInsertIn(stub, &collections); err != nil {
+			message := fmt.Sprintf("persistence error: %s", err.Error())
+			logger.Error(message)
+			return err
+		}
+	}
+	return nil
 }
 
 func main() {

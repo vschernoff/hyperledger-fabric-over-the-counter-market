@@ -42,6 +42,7 @@ COMPOSE_FILE_DEV=$TEMPLATES_DOCKER_COMPOSE_FOLDER/docker-composedev.yaml
 CHAINCODE_VERSION="1.0"
 CHAINCODE_COMMON_NAME=reference
 CHAINCODE_BILATERAL_NAME=relationship
+
 CHAINCODE_COMMON_INIT='{"Args":["init"]}'
 CHAINCODE_BILATERAL_INIT='{"Args":["init"]}'
 COLLECTION_CONFIG='$GOPATH/src/reference/collections_config.json'
@@ -64,6 +65,43 @@ DEFAULT_API_EXTRA_HOSTS2="extra_hosts:[newline]      - orderer.$DOMAIN:$IP_ORDER
 DEFAULT_API_EXTRA_HOSTS3="extra_hosts:[newline]      - orderer.$DOMAIN:$IP_ORDERER[newline]      - peer0.$ORG1.$DOMAIN:$IP1[newline]      - peer0.$ORG2.$DOMAIN:$IP2[newline]      - peer1.$ORG1.$DOMAIN:$IP1[newline]      - peer1.$ORG2.$DOMAIN:$IP2"
 
 GID=$(id -g)
+
+function array_org_to_json() {
+      local arr=("$@");
+      local len=${#arr[@]}
+
+      if [[ ${len} -eq 0 ]]; then
+        >&2 echo "Error: Length of input array needs to be at least 2.";
+         return 1;
+      fi
+
+      if [[ $((len%2)) -eq 1 ]]; then
+         >&2 echo "Error: Length of input array needs to be even (key/value pairs).";
+         return 1;
+      fi
+
+      local foo=0;
+      for i in "${arr[@]}"; do
+          local char="},{"
+          if [ $((++foo%2)) -eq 0 ]; then
+               char=":";
+          fi
+
+          local first="${i:0:1}";  # read first charc
+
+          local app="\\\"$i\\\""
+
+          if [[ "$first" == "^" ]]; then
+            app="${i:1}"  # remove first char
+          fi
+
+          JSON_ORG="$JSON_ORG$char$app";
+
+      done
+
+      JSON_ORG="\"[{${JSON_ORG:3}}]\"";  # remove the first three chars
+}
+
 
 function removeUnwantedContainers() {
   docker ps -a -q -f "name=dev-*"|xargs docker rm -f
@@ -1249,6 +1287,20 @@ done
 checkDocker
 
 if [ "${MODE}" == "up" -a "${ORG}" == "" ]; then
+
+  #Building array from Organizations
+  JSON_ORG="";
+  ARRAY_ORG=()
+  for org in ${ORG3} ${ORG1} ${ORG2}
+  do
+    ARRAY_ORG+=("name" ${org})
+  done
+
+  #Building $JSON_ORG
+  array_org_to_json "${ARRAY_ORG[@]}"
+
+  CHAINCODE_COMMON_INIT='{"Args":["init",'"${JSON_ORG}"']}'
+
   for org in ${DOMAIN} ${ORG1} ${ORG2} ${ORG3}
   do
     dockerComposeUp ${org}
