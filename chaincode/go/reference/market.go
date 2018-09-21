@@ -68,6 +68,8 @@ func (t *MarketChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.queryBidsForCreator(stub, args)
 	} else if function == "queryDeals" {
 		return t.queryDeals(stub, args)
+	} else if function == "queryDealsByPeriod" {
+	 	return t.queryDealsByPeriod(stub, args)
 	} else if function == "queryDealsForCreatorByPeriod" {
 		return t.queryDealsForCreatorByPeriod(stub, args)
 	}
@@ -525,6 +527,117 @@ func (t *MarketChaincode) queryDeals(stub shim.ChaincodeStubInterface, args []st
 	return shim.Success(resultBytes)
 }
 
+func (t *MarketChaincode) queryDealsByPeriod(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	logger.Info("MarketChaincode.queryDealsByPeriod is running")
+	logger.Debug("MarketChaincode.queryDealsByPeriod")
+
+	if len(args) < timePeriodArgumentsNumber {
+		message := fmt.Sprintf("insufficient number of arguments: expected %d, got %d",
+			timePeriodArgumentsNumber, len(args))
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	period := TimePeriod{}
+	if err := period.FillFromArguments(args); err != nil {
+		message := fmt.Sprintf("cannot fill a time period from arguments: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("TimePeriodFrom: " + strconv.FormatInt(period.From,10))
+	logger.Debug("TimePeriodTo: " + strconv.FormatInt(period.To,10))
+
+	filterByPeriod := func(data LedgerData) bool {
+		deal, ok := data.(*Deal)
+		if ok && deal.Value.Timestamp >= period.From {
+			if ok && deal.Value.Timestamp <= period.To {
+				return true
+			}
+		}
+		return false
+	}
+
+	dealsBytes, err := Query(stub, dealIndex, []string{}, CreateDeal, filterByPeriod)
+	if err != nil {
+		message := fmt.Sprintf("unable to perform query: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("Deals: " + string(dealsBytes))
+
+	creator, err := GetCreatorOrganization(stub)
+	if err != nil {
+		message := fmt.Sprintf("cannot obtain creator's name from the certificate: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	collectionsNames, err := getCollectionsNames(stub, creator)
+	if err != nil {
+		message := fmt.Sprintf("collection error: %s", err.Error())
+		logger.Error(message)
+		return pb.Response{Status: 500, Message: message}
+	}
+
+	dealsPrivateDetailsBytes, err := QueryPrivate(
+		stub, dealPrivateDetailsIndex, []string{}, CreateDealPrivateDetails, EmptyFilter, collectionsNames)
+	if err != nil {
+		message := fmt.Sprintf("unable to perform query: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	logger.Debug("Deals details: " + string(dealsPrivateDetailsBytes))
+
+	deals := []Deal{}
+	if err := json.Unmarshal(dealsBytes, &deals); err != nil {
+		message := fmt.Sprintf("unable to unmarshal deals query result: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	dealsPrivateDetails := []DealPrivateDetails{}
+	if err := json.Unmarshal(dealsPrivateDetailsBytes, &dealsPrivateDetails); err != nil {
+		message := fmt.Sprintf("unable to unmarshal deals query result: %s", err.Error())
+		logger.Error(message)
+		return shim.Error(message)
+	}
+
+	privateDetailsMap := make(map[DealKey]DealPrivateDetailsValue)
+	for _, details := range dealsPrivateDetails {
+		privateDetailsMap[details.Key] = details.Value
+	}
+
+	result := []dealQueryResult{}
+	for _, deal := range deals {
+		entry := dealQueryResult {
+			Key: deal.Key,
+			Value: dealQueryResultValue {
+				Amount: deal.Value.Amount,
+				Rate: deal.Value.Rate,
+				Timestamp: deal.Value.Timestamp,
+			},
+		}
+
+		if details, ok := privateDetailsMap[entry.Key]; ok {
+			entry.Value.Borrower = details.Borrower
+			entry.Value.Lender = details.Lender
+		}
+
+		result = append(result, entry)
+	}
+
+	resultBytes, err := json.Marshal(result)
+
+	logger.Debug("Result: " + string(resultBytes))
+
+	logger.Info("MarketChaincode.queryDeals exited without errors")
+	logger.Debug("Success: MarketChaincode.queryDeals")
+	return shim.Success(resultBytes)
+}
+
 func (t *MarketChaincode) queryDealsForCreatorByPeriod(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	logger.Info("MarketChaincode.queryDealsForCreatorByPeriod is running")
 	logger.Debug("MarketChaincode.queryDealsForCreatorByPeriod")
@@ -587,6 +700,7 @@ func (t *MarketChaincode) queryDealsForCreatorByPeriod(stub shim.ChaincodeStubIn
 			logger.Error(message)
 			return pb.Response{Status: 404, Message: message}
 		}
+
 
 		if period.From <= deal.Value.Timestamp && period.To >= deal.Value.Timestamp {
 			entry := dealQueryResult {
@@ -729,6 +843,7 @@ func InitCollections(stub shim.ChaincodeStubInterface, args []string) (error) {
 			return err
 		}
 	}
+	logger.Debug("End init Collections")
 	return nil
 }
 
