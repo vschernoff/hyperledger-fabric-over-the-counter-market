@@ -66,7 +66,7 @@ DEFAULT_API_EXTRA_HOSTS3="extra_hosts:[newline]      - orderer.$DOMAIN:$IP_ORDER
 
 GID=$(id -g)
 
-function array_org_to_json() {
+function array_orgs_to_json() {
       local arr=("$@");
       local len=${#arr[@]}
 
@@ -518,11 +518,11 @@ function instantiateChaincode () {
     channel_names=($2)
     n=$3
     i=$4
-    a=$5
-    if [ -n "$a" ]; then
-    a="--collections-config $a";
+    cc=$5
+    if [ -n "$cc" ]; then
+    cc="--collections-config $cc";
     else
-    a="";
+    cc="";
     fi
 
     f="$GENERATED_DOCKER_COMPOSE_FOLDER/docker-compose-${org}.yaml"
@@ -530,7 +530,7 @@ function instantiateChaincode () {
     for channel_name in ${channel_names[@]}; do
         info "instantiating chaincode $n on $channel_name by $org using $f with $i"
 
-        c="CORE_PEER_ADDRESS=peer0.$org.$DOMAIN:7051 peer chaincode instantiate -n $n -v ${CHAINCODE_VERSION} -c '$i' -o orderer.$DOMAIN:7050 -C $channel_name  $a --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
+        c="CORE_PEER_ADDRESS=peer0.$org.$DOMAIN:7051 peer chaincode instantiate -n $n -v ${CHAINCODE_VERSION} -c '$i' -o orderer.$DOMAIN:7050 -C $channel_name  $cc --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
         d="cli.$org.$DOMAIN"
 
         echo "instantiating with $d by $c"
@@ -656,12 +656,11 @@ function createJoinInstantiateWarmUp() {
   channel_name=${2}
   chaincode_name=${3}
   chaincode_init=${4}
-  additional=${5}
+  collections=${5}
 
   createChannel ${org} ${channel_name}
   joinChannel ${org} ${channel_name}
-  instantiateChaincode ${org} ${channel_name} ${chaincode_name} ${chaincode_init} ${additional}
-  sleep 2
+  instantiateChaincode ${org} ${channel_name} ${chaincode_name} ${chaincode_init} ${collections}
 #  warmUpChaincode ${org} ${channel_name} ${chaincode_name}
 }
 
@@ -1297,19 +1296,19 @@ if [ "${MODE}" == "up" -a "${ORG}" == "" ]; then
   done
 
   #Building $JSON_ORG
-  array_org_to_json "${ARRAY_ORG[@]}"
+  array_orgs_to_json "${ARRAY_ORG[@]}"
 
   CHAINCODE_COMMON_INIT='{"Args":["init",'"${JSON_ORG}"']}'
 
   for org in ${DOMAIN} ${ORG1} ${ORG2} ${ORG3}
   do
     dockerComposeUp ${org}
+    sleep 2
   done
 
   for org in ${ORG1} ${ORG2} ${ORG3}
   do
     installAll ${org}
-    createJoinInstantiateWarmUp ${org} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT}
   done
 
   createJoinInstantiateWarmUp ${ORG1} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT} ${COLLECTION_CONFIG}
@@ -1338,7 +1337,6 @@ elif [ "${MODE}" == "clean" ]; then
 elif [ "${MODE}" == "generate" ]; then
   clean
   removeArtifacts
-
   generatePeerArtifacts ${ORG1} 4000 8081 7054 7051 7053 7056 7058 5984
   generatePeerArtifacts ${ORG2} 4001 8082 8054 8051 8053 8056 8058 6984
   generatePeerArtifacts ${ORG3} 4002 8083 9054 9051 9053 9056 9058 7984
