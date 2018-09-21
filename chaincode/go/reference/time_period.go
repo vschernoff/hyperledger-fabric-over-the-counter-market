@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strconv"
 	"fmt"
+	"time"
 )
 
 const (
@@ -34,6 +35,10 @@ func (t *TimePeriod) FillFromArguments(args []string) error {
 	timePeriodTo, err := strconv.ParseInt(args[1],10, 64)
 	if err != nil {
 		return errors.New(fmt.Sprintf("unable to parse the timePeriodTo: %s", err.Error()))
+	}
+	//Detecting "Now" for timePeriodTo
+	if timePeriodTo == 0 {
+		timePeriodTo = time.Now().UTC().Unix()
 	}
 
 	if timePeriodTo < timePeriodFrom {
