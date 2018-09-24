@@ -9,6 +9,7 @@ let promise;
 function obtainToken() {
   const user = get();
   if (!user) {
+    fetching = false;
     clear();
     window.location.reload(true);
     return Promise.resolve();
@@ -17,7 +18,7 @@ function obtainToken() {
     return promise;
   }
   fetching = true;
-  promise = login(user)
+  promise = login(user, false)
     .then(res => {
       fetching = false;
       if (res.token) {
@@ -26,6 +27,10 @@ function obtainToken() {
       }
 
       return user;
+    })
+    .catch(e => {
+      fetching = false;
+      return Promise.reject(e);
     });
 
   return promise;

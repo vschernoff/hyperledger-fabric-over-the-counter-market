@@ -47,13 +47,13 @@ export function invoke(channel, chaincode, functionName, args) {
   return sendRequest(`/channels/${channel}/chaincodes/${chaincode}`, requestOptions);
 }
 
-export function login(user) {
+export function login(user, retry = true) {
   const requestOptions = {
     method: 'POST',
     body: JSON.stringify({username: user.name, orgName: user.org})
   };
 
-  return sendRequest(`/users`, requestOptions);
+  return sendRequest(`/users`, requestOptions, retry);
 }
 
 export function config() {
