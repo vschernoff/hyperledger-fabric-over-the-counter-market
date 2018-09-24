@@ -58,6 +58,7 @@ services:
     image: dockeraltoros/fabric-rest
     volumes:
      - ../artifacts:/usr/src/artifacts
+     - ../middleware-auth:/usr/src/app/middleware-auth
      - ../client/build:/usr/src/app/www
     command: sh -c "npm start"
 
