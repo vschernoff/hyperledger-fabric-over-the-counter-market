@@ -550,10 +550,8 @@ func (t *MarketChaincode) queryDealsByPeriod(stub shim.ChaincodeStubInterface, a
 
 	filterByPeriod := func(data LedgerData) bool {
 		deal, ok := data.(*Deal)
-		if ok && deal.Value.Timestamp >= period.From {
-			if ok && deal.Value.Timestamp <= period.To {
-				return true
-			}
+		if ok && deal.Value.Timestamp >= period.From && deal.Value.Timestamp <= period.To {
+			return true
 		}
 		return false
 	}
