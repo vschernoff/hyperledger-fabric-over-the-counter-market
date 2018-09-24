@@ -44,10 +44,10 @@ class SummaryPage extends React.Component {
       return acc + (rec.value.lender === user.org ? -val : val)
     }, 0);
 
-    const netted = formatter.number(data.reduce((acc, rec) => {
+    const netted = data.reduce((acc, rec) => {
       const val = (rec.value.amount/365*rec.value.rate);
       return acc + (rec.value.lender === user.org ? val : -val)
-    }, 0));
+    }, 0);
 
     const clearingColumns = [{
       Header: 'Cash out, ' + commonConstants.CURRENCY_SIGN,
