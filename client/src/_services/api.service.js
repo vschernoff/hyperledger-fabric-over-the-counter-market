@@ -1,17 +1,9 @@
 import {sendRequest} from '../_helpers/request';
 import {configService} from './config.service';
 
-//TODO get from config
-export const contracts = {
-  reference: 'reference',
-  relationship: 'relationship'
-};
-export const channels = {
-  common: 'common',
-  ab: 'a-b',
-  ac: 'a-c',
-  bc: 'b-c'
-};
+function _getPeer() {
+  return configService.getPeers()[0];
+}
 
 export function query(channel, chaincode, fcn, args) {
   const requestOptions = {
@@ -20,16 +12,15 @@ export function query(channel, chaincode, fcn, args) {
 
   const {org} = configService.get();
   const params = {
-    peer: `${org}/peer0`,
+    peer: `${org}/${_getPeer()}`,
     fcn,
     args
   };
 
-  //TODO set host
   const url = new URL(`${window.location.origin}/channels/${channel}/chaincodes/${chaincode}`);
   Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
 
-  return sendRequest(url, requestOptions);
+  return sendRequest(`${url.pathname}${url.search}`, requestOptions);
 }
 
 export function invoke(channel, chaincode, functionName, args) {
@@ -38,7 +29,7 @@ export function invoke(channel, chaincode, functionName, args) {
   const requestOptions = {
     method: 'POST',
     body: JSON.stringify({
-      peers: [`${org}/peer0`],
+      peers: [`${org}/${_getPeer()}`],
       fcn: functionName,
       args
     })
@@ -54,6 +45,18 @@ export function login(user, retry = true) {
   };
 
   return sendRequest(`/users`, requestOptions, retry);
+}
+
+export function getChannels() {
+  return sendRequest(`/channels?peer=${_getPeer()}`);
+}
+
+export function getChaincodes() {
+  return sendRequest(`/chaincodes?peer=${_getPeer()}`);
+}
+
+export function extendConfig() {
+  return configService.update();
 }
 
 export function config() {

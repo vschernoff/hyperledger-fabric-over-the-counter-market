@@ -1,12 +1,12 @@
 import {set, get, clear} from '../_helpers';
-import {login} from './api.service';
+import {login, extendConfig} from './api.service';
 
 export const authService = {
   obtainToken
 };
 let fetching = false;
 let promise;
-function obtainToken() {
+async function obtainToken() {
   const user = get();
   if (!user) {
     fetching = false;
@@ -28,6 +28,7 @@ function obtainToken() {
 
       return user;
     })
+    .then(extendConfig)
     .catch(e => {
       fetching = false;
       return Promise.reject(e);

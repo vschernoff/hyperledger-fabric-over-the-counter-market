@@ -19,10 +19,23 @@ function _parseMessage(input = '') {
   return detailedMsg;
 }
 
-export function sendRequest(url, options = {}, retry) {
+export async function sendRequest(url, options = {}, retry = true) {
   options.headers = updateHeaders(options.headers);
-  return fetch(url, options)
-    .then(handleResponse(url, options, retry));
+
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const retryParams = forwardRequestByError[response.status];
+    if (retryParams && retry) {
+      await retryParams.fnc();
+      await retryPromise(url, options, retryParams.timeout, retryParams.retry);
+    } else {
+      const data = await response.json();
+      const error = (data && data.message && _parseMessage(data.message)) || response.statusText;
+      return Promise.reject(new Error(error));
+    }
+  }
+
+  return await response.json();
 }
 
 function retry(asyncFn, args, timeout, attempt, resolveFn, rejectFn, e) {
@@ -44,28 +57,6 @@ const retryPromise = (url, options, timeout, attempt) => {
     retry(sendRequest, [url, options, false], timeout, attempt, resolve, reject)
   });
 };
-
-function handleResponse(url, options, retry = true) {
-  return (response) => {
-    return response.json().then(data => {
-      if (!response.ok) {
-        const retryParams = forwardRequestByError[response.status];
-        if (retryParams && retry) {
-          return retryParams.fnc().then(() => {
-            return retryPromise(
-              url, options,
-              retryParams.timeout,
-              retryParams.retry);
-          });
-        } else {
-          const error = (data && data.message && _parseMessage(data.message)) || response.statusText;
-          return Promise.reject(new Error(error));
-        }
-      }
-      return data;
-    });
-  };
-}
 
 function authHeader() {
   let token = getToken();

@@ -9,66 +9,72 @@ export const bidService = {
   cancel
 };
 
-// function _selectChannelFromDeal(deal) {
-//   return _selectChannel(configService.get().org, bid.value.creator);
-// }
-// function _selectChannelFromBid(bid) {
-//   const {requestSender, requestReceiver} = bid.key;
-//   return _selectChannel(requestSender, requestReceiver);
-// }
-// function _selectChannel(org1, org2) {
-//   const [first, second] = [org1, org2].sort();
-//   return apiService.channels[`${first}${second}`];
-// }
-function _getChannels() {
-  const userOrg = configService.get().org;
-  return Object.entries(apiService.channels)
-    .filter(([k, v]) => {
-      return k.includes(userOrg) && v.includes('-');
-    })
-    .map(([k, v]) => v);
-}
+const ACTIONS = {
+  getAll: 'queryBids',
+  add: 'placeBid',
+  edit: 'editBid',
+  accept: 'makeDeal',
+  cancel: 'cancelBid'
+};
 
-function getAll() {
+const CHAINCODES = {
+  reference: 'reference'
+};
+
+const CHANNELS = {
+  common: 'common'
+};
+
+async function getAll() {
+  const channels = await configService.getChannels();
+  const chaincodes = await configService.getChaincodes();
   return apiService.query(
-    apiService.channels.common,
-    apiService.contracts.reference,
-    'queryBids',
+    channels[CHANNELS.common],
+    chaincodes[CHAINCODES.reference],
+    ACTIONS.getAll,
     `[]`);
 }
 
-function add(bid) {
+async function add(bid) {
+  const channels = await configService.getChannels();
+  const chaincodes = await configService.getChaincodes();
   return apiService.invoke(
-    apiService.channels.common,
-    apiService.contracts.reference,
-    'placeBid',
+    channels[CHANNELS.common],
+    chaincodes[CHAINCODES.reference],
+    ACTIONS.add,
     [bid.type + '', bid.amount, bid.rate]
   );
 }
 
-function edit(bid) {
+async function edit(bid) {
+  const channels = await configService.getChannels();
+  const chaincodes = await configService.getChaincodes();
   return apiService.invoke(
-    apiService.channels.common,
-    apiService.contracts.reference,
-    'editBid',
+    channels[CHANNELS.common],
+    chaincodes[CHAINCODES.reference],
+    ACTIONS.edit,
     [bid.id, 0, bid.amount, bid.rate]
   );
 }
 
-function accept(bid) {
+async function accept(bid) {
+  const channels = await configService.getChannels();
+  const chaincodes = await configService.getChaincodes();
   return apiService.invoke(
-    apiService.channels.common,
-    apiService.contracts.reference,
-    'makeDeal',
+    channels[CHANNELS.common],
+    chaincodes[CHAINCODES.reference],
+    ACTIONS.accept,
     [bid.key.id]
   );
 }
 
-function cancel(bid) {
+async function cancel(bid) {
+  const channels = await configService.getChannels();
+  const chaincodes = await configService.getChaincodes();
   return apiService.invoke(
-    apiService.channels.common,
-    apiService.contracts.reference,
-    'cancelBid',
+    channels[CHANNELS.common],
+    chaincodes[CHAINCODES.reference],
+    ACTIONS.cancel,
     [bid.key.id]
   );
 }
