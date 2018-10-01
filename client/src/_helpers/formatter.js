@@ -5,5 +5,5 @@ export const formatter = {
   number: val => Number(val).toLocaleString(),
   date: date => date.toLocaleDateString(),
   time: date => date.toLocaleTimeString(),
-  org: orgKey => orgConstants[orgKey]
+  org: orgKey => orgConstants[orgKey] || '###'
 };
