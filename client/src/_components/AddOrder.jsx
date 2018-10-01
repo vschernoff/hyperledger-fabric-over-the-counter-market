@@ -68,7 +68,7 @@ class AddOrder extends React.Component {
     this.setState({
       bid: {
         ...this.state.bid,
-        rate: newV && newV.value || ''
+        rate: (newV && newV.value) || ''
       }
     });
   }

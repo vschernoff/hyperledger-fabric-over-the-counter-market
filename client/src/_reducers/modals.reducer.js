@@ -27,6 +27,6 @@ export function modals(state = {}, action) {
         }
       }
     }
+    default: return state;
   }
-  return state;
 }
