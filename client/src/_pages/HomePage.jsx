@@ -58,7 +58,7 @@ class HomePage extends React.Component {
         </div>
         <div className="row">
           <div className="col">
-            <Chart/>
+            <Chart lineType="liner"/>
           </div>
         </div>
       </div>

@@ -7,7 +7,7 @@ import {commonConstants} from '../_constants';
 
 class LineBarAreaComposedChart extends React.Component {
   render () {
-    const {deals, formatXAxis} = this.props;
+    const {deals, formatXAxis, lineType} = this.props;
 
     if (!deals || !deals.items) {
       return null;
@@ -32,7 +32,7 @@ class LineBarAreaComposedChart extends React.Component {
           <Tooltip />
           <Legend />
           <Bar yAxisId="right" dataKey='value.amount' name="Amount" barSize={20} fill='#413ea0' unit={commonConstants.CURRENCY_SIGN} />
-          <Line yAxisId="left" dataKey='value.rate' name="Rate" type='monotone' stroke='#ff7300' unit={commonConstants.RATE_SIGN} />
+          <Line yAxisId="left" dataKey='value.rate' name="Rate" type={lineType || "liner"} stroke='#ff7300' unit={commonConstants.RATE_SIGN} />
         </ComposedChart>
       </ResponsiveContainer>
     );

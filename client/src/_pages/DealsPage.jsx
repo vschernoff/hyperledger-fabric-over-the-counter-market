@@ -104,7 +104,7 @@ class DealsPage extends React.Component {
         </div>
         <div className="row">
           <div className="col">
-            <Chart formatXAxis={formatter.datetime}/>
+            <Chart formatXAxis={formatter.datetime} lineType="liner"/>
           </div>
         </div>
       </div>
