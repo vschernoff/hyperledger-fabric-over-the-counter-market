@@ -1,10 +1,10 @@
 export const orgConstants = {
-  a: 'HSBC',
-  b: 'BARC',
-  c: 'CITI',
-  d: 'NOMU',
-  e: 'BONY',
-  f: 'DEUC',
-  g: 'SWIS',
-  h: 'SBER'
+  a: 'SWIZ',
+  b: 'TICI',
+  c: 'NAMU',
+  d: 'HBSZ',
+  e: 'NYBO',
+  f: 'DUCE',
+  g: 'SWIZ',
+  h: 'SBRE'
 };

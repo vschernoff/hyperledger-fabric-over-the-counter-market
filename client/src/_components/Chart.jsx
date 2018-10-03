@@ -5,6 +5,9 @@ import {ComposedChart, ResponsiveContainer, Line, Bar, XAxis, YAxis, CartesianGr
 import {formatter} from '../_helpers';
 import {commonConstants} from '../_constants';
 
+
+const DEFAULT_TICKS = [0.125, 0.250, 0.375, 0.500, 0.625, 0.750, 0.875, 1.000];
+
 class LineBarAreaComposedChart extends React.Component {
   render () {
     const {deals, formatXAxis, lineType} = this.props;
@@ -27,7 +30,7 @@ class LineBarAreaComposedChart extends React.Component {
                        margin={{top: 20, right: 20, bottom: 20, left: 20}}>
           <CartesianGrid stroke='#f5f5f5'/>
           <XAxis dataKey="value.ts" name="Time"/>
-          <YAxis yAxisId="left" tickFormatter={formatter.rate} unit={commonConstants.RATE_SIGN} interval={0} />
+          <YAxis yAxisId="left" tickFormatter={formatter.rate} unit={commonConstants.RATE_SIGN} interval={0} ticks={DEFAULT_TICKS} />
           <YAxis yAxisId="right" tickFormatter={formatter.number} orientation="right" unit={commonConstants.CURRENCY_SIGN}/>
           <Tooltip />
           <Legend />
