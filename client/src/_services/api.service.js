@@ -5,11 +5,11 @@ function _getPeer() {
   return configService.getPeers()[0];
 }
 
-export function query(channel, chaincode, fcn, args) {
+export function query(channel, chaincode, fcn, args = []) {
   const requestOptions = {
     method: 'GET'
   };
-
+  args = JSON.stringify(args);
   const {org} = configService.get();
   const params = {
     peer: `${org}/${_getPeer()}`,

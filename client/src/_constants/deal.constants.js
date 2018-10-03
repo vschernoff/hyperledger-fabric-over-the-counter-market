@@ -1,5 +1,5 @@
 const stages = ['request', 'success', 'failure'];
-const actions = ['login', 'getall', 'add', 'edit', 'history'];
+const actions = ['login', 'getall', 'add', 'edit', 'history', 'getbyperiod', 'getforcreatorbyperiod'];
 
 export const dealConstants = {};
 actions.forEach(action => {

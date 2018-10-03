@@ -6,6 +6,8 @@ export const dealActions = {
   add,
   edit,
   getAll,
+  getByPeriod,
+  getForCreatorByPeriod,
   history
 };
 
@@ -90,6 +92,58 @@ function getAll(shadowMode) {
 
   function failure(error) {
     return {type: dealConstants.GETALL_FAILURE, error}
+  }
+}
+
+function getByPeriod(period) {
+  return dispatch => {
+    dispatch(request(period));
+
+    dealService.getByPeriod(period)
+      .then(
+        products => {
+          dispatch(success(products));
+        },
+        error => dispatch(failure(error.toString()))
+      );
+  };
+
+  function request(period) {
+    return {type: dealConstants.GETBYPERIOD_REQUEST, period}
+  }
+
+  function success(deals) {
+    return {type: dealConstants.GETBYPERIOD_SUCCESS, deals}
+  }
+
+  function failure(error) {
+    return {type: dealConstants.GETBYPERIOD_FAILURE, error}
+  }
+}
+
+function getForCreatorByPeriod(period) {
+  return dispatch => {
+    dispatch(request(period));
+
+    dealService.getForCreatorByPeriod(period)
+      .then(
+        products => {
+          dispatch(success(products));
+        },
+        error => dispatch(failure(error.toString()))
+      );
+  };
+
+  function request(period) {
+    return {type: dealConstants.GETFORCREATORBYPERIOD_REQUEST, period}
+  }
+
+  function success(deals) {
+    return {type: dealConstants.GETFORCREATORBYPERIOD_SUCCESS, deals}
+  }
+
+  function failure(error) {
+    return {type: dealConstants.GETFORCREATORBYPERIOD_FAILURE, error}
   }
 }
 

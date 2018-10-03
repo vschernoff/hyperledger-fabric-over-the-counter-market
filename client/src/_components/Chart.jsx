@@ -7,16 +7,16 @@ import {commonConstants} from '../_constants';
 
 class LineBarAreaComposedChart extends React.Component {
   render () {
-    const {deals} = this.props;
+    const {deals, formatXAxis} = this.props;
 
     if (!deals || !deals.items) {
       return null;
     }
 
     const data = deals.items.map(r => {
-        r.value.ts = formatter.time(new Date(r.value.timestamp * 1000));
-        return r;
-      })
+      r.value.ts = formatXAxis ? formatXAxis(new Date(r.value.timestamp * 1000)) : formatter.time(new Date(r.value.timestamp * 1000));
+      return r;
+    })
       .sort((a, b) => {
         return a.value.timestamp > b.value.timestamp ? 1 : -1;
       });

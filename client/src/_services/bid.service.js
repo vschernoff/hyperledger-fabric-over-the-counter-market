@@ -31,8 +31,7 @@ async function getAll() {
   return apiService.query(
     channels[CHANNELS.common],
     chaincodes[CHAINCODES.reference],
-    ACTIONS.getAll,
-    `[]`);
+    ACTIONS.getAll);
 }
 
 async function add(bid) {

@@ -4,6 +4,7 @@ import {connect} from 'react-redux';
 import {AddOrder, Chart, OrdersTable, DealsTable, Modal} from '../_components';
 import {orderActions, dealActions, modalActions} from '../_actions';
 import {modalIds} from '../_constants';
+import {NavLink} from 'react-router-dom';
 
 class HomePage extends React.Component {
 
@@ -33,9 +34,14 @@ class HomePage extends React.Component {
   render() {
     return (
       <div>
-        <button className="btn btn-primary mb-2" onClick={Modal.open.bind(this, modalIds.addOrder)}>
-          Place Order
-        </button>
+        <div className="row justify-content-between">
+          <button className="btn btn-primary mb-2" onClick={Modal.open.bind(this, modalIds.addOrder)}>
+            Place Order
+          </button>
+          <NavLink to='/deals' className="btn btn-primary mb-2">
+            Deals Details
+          </NavLink>
+        </div>
         <Modal modalId={modalIds.addOrder} title="Place Order">
           <AddOrder/>
         </Modal>

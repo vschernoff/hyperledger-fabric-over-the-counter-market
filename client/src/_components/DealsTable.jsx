@@ -23,13 +23,13 @@ class DealsTable extends React.Component {
   }
 
   render() {
-    const {deals} = this.props;
+    const {deals, columns} = this.props;
 
     if (!deals || !deals.items) {
       return null;
     }
 
-    const columns = [{
+    const columnsDefault = [{
       Header: 'Lender',
       id: 'value.lender',
       accessor: rec => formatter.org(rec.value.lender)
@@ -53,7 +53,7 @@ class DealsTable extends React.Component {
 
     return (
         <ReactTable
-          columns={columns}
+          columns={columns || columnsDefault}
           data={deals.items || []}
           className="-striped -highlight"
           defaultPageSize={10}
