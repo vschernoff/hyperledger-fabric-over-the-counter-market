@@ -26,9 +26,11 @@ async function obtainToken() {
         set(user);
       }
 
-      return user;
+      return extendConfig()
+        .then(() => {
+          return user;
+        });
     })
-    .then(extendConfig)
     .catch(e => {
       fetching = false;
       return Promise.reject(e);
