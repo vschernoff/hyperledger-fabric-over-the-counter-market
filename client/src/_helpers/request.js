@@ -4,12 +4,12 @@ import {getToken} from './user-store';
 
 const forwardRequestByError = {
   '401': {
-    retry: 2,
+    retry: 3,
     timeout: 1000,
     fnc: authService.obtainToken.bind(authService)
   },
   '500': {
-    retry: 3,
+    retry: 5,
     timeout: 3000,
     fnc: Promise.resolve.bind(Promise)
   }
@@ -28,7 +28,7 @@ export async function sendRequest(url: string, options: Object = {}, retry: bool
     const retryParams = forwardRequestByError[response.status];
     if (retryParams && retry) {
       await retryParams.fnc();
-      await retryPromise(url, options, retryParams.timeout, retryParams.retry);
+      return await retryPromise(url, options, retryParams.timeout, retryParams.retry);
     } else {
       const data = await response.json();
       const error = (data && data.message && _parseMessage(data.message)) || response.statusText;
