@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactTable from 'react-table';
 import {connect} from 'react-redux';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSync } from '@fortawesome/free-solid-svg-icons';
 
 import {dealActions} from '../_actions';
 import {formatter} from '../_helpers';
@@ -109,7 +111,7 @@ class SummaryPage extends React.Component {
       <div>
         <div className="row">
           <div className="col col-form-label">
-            <button className="btn" onClick={this.refreshData}>Refresh <i className="fas fa-sync"/></button>
+            <button className="btn" onClick={this.refreshData}>Refresh <FontAwesomeIcon icon={faSync}/></button>
           </div>
         </div>
         <div className="row">

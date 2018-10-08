@@ -1,6 +1,7 @@
 import React from 'react';
 import {NavLink} from 'react-router-dom';
 import {connect} from 'react-redux';
+import logo from '../static/AltorosLogo_mini1.png';
 
 import {formatter} from '../_helpers';
 
@@ -9,7 +10,7 @@ class Header extends React.Component {
     const {user} = this.props;
     return (
       <nav className="navbar navbar-light navbar-expand">
-        <div className="navbar-brand"><img src="./AltorosLogo_mini1.png" alt="logo"/></div>
+        <div className="navbar-brand"><img src={logo} alt="logo"/></div>
         {user && <div className="container-fluid">
           <div className='ml-5'>Hi, <b>{user.name}</b> from <i>{formatter.org(user.org)}</i></div>
           <ul className="nav navbar-nav pull-xs-right">

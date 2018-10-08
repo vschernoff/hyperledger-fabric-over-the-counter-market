@@ -2,6 +2,9 @@ import React from 'react';
 import ReactTable from 'react-table';
 import {connect} from 'react-redux';
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHandshake, faPen, faTimes } from '@fortawesome/free-solid-svg-icons';
+
 import {orderActions} from '../_actions';
 import {modalIds} from '../_constants';
 import {Modal} from '../_components';
@@ -71,19 +74,19 @@ class OrdersTable extends React.Component {
             {(record.value.status === 0 && record.value.creator !== user.org) &&
               (<button className="btn btn-sm btn-success" title="Make deal"
                        onClick={()=>{this.makeDeal(row.original)}}>
-                <i className="far fa-fw fa-handshake"/>
+                <FontAwesomeIcon fixedWidth icon={faHandshake}/>
               </button>)
             }
             {(record.value.status === 0 && record.value.creator === user.org) &&
             (<button className="btn btn-sm btn-primary"  title="Edit"
                      onClick={Modal.open.bind(this, modalIds.editOrder, record)}>
-              <i className="fas fa-fw fa-pen"/>
+              <FontAwesomeIcon fixedWidth icon={faPen}/>
             </button>)
             }
             {(record.value.status === 0 && record.value.creator === user.org) &&
               (<button className="btn btn-sm btn-danger"  title="Cancel"
                        onClick={()=>{this.cancelBid(row.original)}}>
-                  <i className="fas fa-fw fa-times"/>
+                <FontAwesomeIcon fixedWidth icon={faTimes}/>
               </button>)
             }
           </div>
