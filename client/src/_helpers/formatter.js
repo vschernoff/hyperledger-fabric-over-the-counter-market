@@ -1,10 +1,11 @@
+// @flow
 import {orgConstants} from '../_constants';
 
 export const formatter = {
-  rate: val => Number(val).toFixed(3),
-  number: val => Number(val).toLocaleString(),
-  date: date => date.toLocaleDateString(),
-  time: date => date.toLocaleTimeString(),
-  org: orgKey => orgConstants[orgKey] || '###',
-  datetime: date => date.toLocaleString()
+  rate: (val: string | number) => Number(val).toFixed(3),
+  number: (val: string| number) => Number(val).toLocaleString(),
+  date: (date: Date) => date.toLocaleDateString(),
+  time: (date: Date) => date.toLocaleTimeString(),
+  org: (orgKey: string) => orgConstants[orgKey] || '###',
+  datetime: (date: Date) => date.toLocaleString()
 };

@@ -1,3 +1,4 @@
+// @flow
 import React from 'react';
 import {connect} from 'react-redux';
 import ReactModal from 'react-modal';
@@ -17,12 +18,25 @@ const customStyles = {
   }
 };
 
-class Modal extends React.Component {
+type Props = {
+  dispatch: Function,
+  modalId: string,
+  title: string,
+  large: boolean,
+  modals: {}, //TODO
+  children: any[],
+  footer: boolean,
+  submitText: string
+};
+type State = {
+};
+
+class Modal extends React.Component<Props, State> {
+  handleSubmit: (e: SyntheticEvent<HTMLButtonElement>) => {};
   constructor(props) {
     super(props);
-    this.handleCloseModal = this.handleCloseModal.bind(this);
-    this.setSubmitFn = this.setSubmitFn.bind(this);
-    this.handleSubmit = () => {};
+    (this:any).handleCloseModal = this.handleCloseModal.bind(this);
+    (this:any).setSubmitFn = this.setSubmitFn.bind(this);
   }
 
   componentDidMount() {
@@ -30,11 +44,11 @@ class Modal extends React.Component {
     dispatch(modalActions.register(modalId));
   }
 
-  static open(modalId, data) {
-    this.props.dispatch(modalActions.show(modalId, data));
+  static open(dispatch: Function, modalId: string, data: any) {
+    dispatch(modalActions.show(modalId, data));
   }
 
-  setSubmitFn(fn) {
+  setSubmitFn(fn: Function) {
     this.handleSubmit = fn;
   }
 

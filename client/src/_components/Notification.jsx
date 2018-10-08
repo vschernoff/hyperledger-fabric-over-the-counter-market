@@ -1,13 +1,24 @@
+// @flow
 import React from 'react';
 import {connect} from 'react-redux';
 import './Notification.css';
-import {alertActions} from '../_actions/alert.actions';
+import {alertActions} from '../_actions';
 
-class Notification extends React.Component {
+type Alert = {
+  type: string,
+  message: string
+}
+type Props = {
+  dispatch: Function,
+  alert: Alert
+};
+type State = {
+};
+class Notification extends React.Component<Props, State> {
   constructor(props) {
     super(props);
 
-    this.cancel = this.cancel.bind(this);
+    (this:any).cancel = this.cancel.bind(this);
   }
   render() {
     const {alert} = this.props;

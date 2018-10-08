@@ -6,3 +6,4 @@ export * from './deal.constants';
 export * from './order.constants';
 export * from './org.constants';
 export * from './modal.constants';
+export * from './rates.constants';

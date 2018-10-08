@@ -1,5 +1,5 @@
 import {orderConstants} from '../_constants';
-import {bidService} from '../_services';
+import {orderService} from '../_services';
 import {alertActions} from './';
 
 export const orderActions = {
@@ -14,7 +14,7 @@ export const orderActions = {
 function getAll(shadowMode) {
   return dispatch => {
     dispatch(request(shadowMode));
-    bidService.getAll()
+    orderService.getAll()
       .then(
          requests => {
           dispatch(success(requests));
@@ -42,7 +42,7 @@ function getAll(shadowMode) {
 function add(bid, comment) {
   return dispatch => {
     dispatch(request());
-    bidService.add(bid, comment)
+    orderService.add(bid, comment)
       .then(
         _ => {
           dispatch(success());
@@ -71,7 +71,7 @@ function add(bid, comment) {
 function edit(bid) {
   return dispatch => {
     dispatch(request());
-    bidService.edit(bid)
+    orderService.edit(bid)
       .then(
         _ => {
           dispatch(success());
@@ -100,7 +100,7 @@ function edit(bid) {
 function accept(req) {
   return dispatch => {
     dispatch(request());
-    bidService.accept(req)
+    orderService.accept(req)
       .then(
         _ => {
           dispatch(success());
@@ -129,7 +129,7 @@ function accept(req) {
 function cancel(req) {
   return dispatch => {
     dispatch(request());
-    bidService.cancel(req)
+    orderService.cancel(req)
       .then(
         _ => {
           dispatch(success());
@@ -159,7 +159,7 @@ function history(req) {
   return dispatch => {
     dispatch(request());
 
-    bidService.history(req)
+    orderService.history(req)
       .then(
         history => {
           dispatch(success(req, history));

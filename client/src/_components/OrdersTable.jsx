@@ -1,3 +1,4 @@
+// @flow
 import React from 'react';
 import ReactTable from 'react-table';
 import {connect} from 'react-redux';
@@ -5,19 +6,28 @@ import {connect} from 'react-redux';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHandshake, faPen, faTimes } from '@fortawesome/free-solid-svg-icons';
 
+import type {Order, User} from '../_types';
 import {orderActions} from '../_actions';
 import {modalIds} from '../_constants';
 import {Modal} from '../_components';
 import {formatter} from '../_helpers';
 import {commonConstants} from '../_constants/common.constants';
 
-class OrdersTable extends React.Component {
+type Props = {
+  dispatch: Function,
+  orders: {items: Order[]},
+  user: User
+};
+type State = {
+};
+
+class OrdersTable extends React.Component<Props, State> {
   constructor() {
     super();
 
-    this.refreshData = this.refreshData.bind(this);
-    this.makeDeal = this.makeDeal.bind(this);
-    this.cancelBid = this.cancelBid.bind(this);
+    (this:any).refreshData = this.refreshData.bind(this);
+    (this:any).makeDeal = this.makeDeal.bind(this);
+    (this:any).cancelBid = this.cancelBid.bind(this);
   }
 
   componentDidMount() {
@@ -40,35 +50,35 @@ class OrdersTable extends React.Component {
     const columns = [{
       Header: 'Lender',
       id: 'lender',
-      accessor: rec => rec.value.type === 0 ? formatter.org(rec.value.creator) : ''
+      accessor: (rec: Order) => rec.value.type === 0 ? formatter.org(rec.value.creator) : ''
     }, {
       Header: 'Amount Lend, ' + commonConstants.CURRENCY_SIGN,
       id: 'amount.lend',
       className: 'text-danger',
-      accessor: rec => rec.value.type === 0 ? formatter.number(rec.value.amount) : ''
+      accessor: (rec: Order) => rec.value.type === 0 ? formatter.number(rec.value.amount) : ''
     }, {
       Header: 'Rate, ' + commonConstants.RATE_SIGN,
       id: 'value.rate',
-      accessor: rec => formatter.rate(rec.value.rate),
-      sortMethod: (a, b) => {
+      accessor: (rec: Order) => formatter.rate(rec.value.rate),
+      sortMethod: (a: number, b: number) => {
         return a && b && parseFloat(a) > parseFloat(b) ? 1 : -1;
       }
     }, {
       Header: 'Amount Borrow, ' + commonConstants.CURRENCY_SIGN,
       id: 'amount.borrow',
       className: 'text-success',
-      accessor: rec => rec.value.type === 1 ? formatter.number(rec.value.amount) : ''
+      accessor: (rec: Order) => rec.value.type === 1 ? formatter.number(rec.value.amount) : ''
     },{
       Header: 'Borrower',
       id: 'borrower',
-      accessor: rec => rec.value.type === 1 ? formatter.org(rec.value.creator) : ''
+      accessor: (rec: Order) => rec.value.type === 1 ? formatter.org(rec.value.creator) : ''
     },  {
       id: 'actions',
       Header: 'Actions',
       accessor: 'key.id',
       filterable: false,
       Cell: row => {
-        const record = row.original;
+        const record: Order = row.original;
         return (
           <div>
             {(record.value.status === 0 && record.value.creator !== user.org) &&
@@ -79,7 +89,7 @@ class OrdersTable extends React.Component {
             }
             {(record.value.status === 0 && record.value.creator === user.org) &&
             (<button className="btn btn-sm btn-primary"  title="Edit"
-                     onClick={Modal.open.bind(this, modalIds.editOrder, record)}>
+                     onClick={()=>Modal.open(this.props.dispatch, modalIds.editOrder, record)}>
               <FontAwesomeIcon fixedWidth icon={faPen}/>
             </button>)
             }
@@ -102,7 +112,7 @@ class OrdersTable extends React.Component {
         defaultPageSize={10}
         minWidth={60}
         filterable={true}
-        getTrProps={(state, rowInfo) => {
+        getTrProps={(state, rowInfo: {original: Order}) => {
           return {
             style: {
               'font-weight': rowInfo && rowInfo.original.value.creator !== user.org ? "normal" : "bold"
@@ -118,15 +128,15 @@ class OrdersTable extends React.Component {
     );
   }
 
-  makeDeal(record) {
+  makeDeal(record: Order) {
     this.props.dispatch(orderActions.accept(record));
   }
 
-  cancelBid(record) {
+  cancelBid(record: Order) {
     this.props.dispatch(orderActions.cancel(record));
   }
 
-  editBid(record) {
+  editBid(record: Order) {
     this.props.dispatch(orderActions.edit(record));
   }
 }

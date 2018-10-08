@@ -1,3 +1,4 @@
+// @flow
 import * as apiService from './api.service';
 import {configService} from './config.service';
 
@@ -30,7 +31,7 @@ async function getAll() {
     ACTIONS.getAll);
 }
 
-async function getByPeriod(period) {
+async function getByPeriod(period: string[]) {
   const channels = await configService.getChannels();
   const chaincodes = await configService.getChaincodes();
   return await apiService.query(
@@ -40,7 +41,7 @@ async function getByPeriod(period) {
     period);
 }
 
-async function getForCreatorByPeriod(period) {
+async function getForCreatorByPeriod(period: string[]) {
   const channels = await configService.getChannels();
   const chaincodes = await configService.getChaincodes();
   return await apiService.query(

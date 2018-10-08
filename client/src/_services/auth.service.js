@@ -1,3 +1,4 @@
+// @flow
 import {set, get, clear} from '../_helpers';
 import {login, extendConfig} from './api.service';
 

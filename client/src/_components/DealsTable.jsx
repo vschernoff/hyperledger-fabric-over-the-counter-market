@@ -1,17 +1,48 @@
+// @flow
 import React from 'react';
 import ReactTable from 'react-table';
 import {connect} from 'react-redux';
 
+import type {Deal} from '../_types';
 import {dealActions} from '../_actions';
 import {formatter} from '../_helpers';
 import {commonConstants} from '../_constants';
 
+type Props = {
+  dispatch: Function,
+  deals: {items: Deal[]},
+  columns: any[]
+};
+type State = {
+};
 
-class DealsTable extends React.Component {
+const DEFAULT_COLUMNS = [{
+  Header: 'Lender',
+  id: 'value.lender',
+  accessor: (rec: Deal) => formatter.org(rec.value.lender)
+}, {
+  Header: 'Borrower',
+  id: 'value.borrower',
+  accessor: (rec: Deal) => formatter.org(rec.value.borrower)
+}, {
+  Header: 'Amount, ' + commonConstants.CURRENCY_SIGN,
+  id: 'value.amount',
+  accessor: (rec: Deal) => formatter.number(rec.value.amount)
+}, {
+  Header: 'Rate, ' + commonConstants.RATE_SIGN,
+  id: 'value.rate',
+  accessor: (rec: Deal) => formatter.rate(rec.value.rate)
+}, {
+  Header: 'Date',
+  id: 'value.timestamp',
+  accessor: (rec: Deal) => formatter.time(new Date(rec.value.timestamp * 1000))
+}];
+
+class DealsTable extends React.Component<Props, State> {
   constructor() {
     super();
 
-    this.refreshData = this.refreshData.bind(this);
+    (this:any).refreshData = this.refreshData.bind(this);
   }
 
   componentDidMount() {
@@ -29,31 +60,9 @@ class DealsTable extends React.Component {
       return null;
     }
 
-    const columnsDefault = [{
-      Header: 'Lender',
-      id: 'value.lender',
-      accessor: rec => formatter.org(rec.value.lender)
-    }, {
-      Header: 'Borrower',
-      id: 'value.borrower',
-      accessor: rec => formatter.org(rec.value.borrower)
-    }, {
-      Header: 'Amount, ' + commonConstants.CURRENCY_SIGN,
-      id: 'value.amount',
-      accessor: rec => formatter.number(rec.value.amount)
-    }, {
-      Header: 'Rate, ' + commonConstants.RATE_SIGN,
-      id: 'value.rate',
-      accessor: rec => formatter.rate(rec.value.rate)
-    }, {
-      Header: 'Date',
-      id: 'value.timestamp',
-      accessor: rec => formatter.time(new Date(rec.value.timestamp * 1000))
-    }];
-
     return (
         <ReactTable
-          columns={columns || columnsDefault}
+          columns={columns || DEFAULT_COLUMNS}
           data={deals.items || []}
           className="-striped -highlight"
           defaultPageSize={10}

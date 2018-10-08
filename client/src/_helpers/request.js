@@ -1,25 +1,26 @@
+// @flow
 import {authService} from '../_services/auth.service';
 import {getToken} from './user-store';
 
 const forwardRequestByError = {
-  401: {
+  '401': {
     retry: 2,
     timeout: 1000,
     fnc: authService.obtainToken.bind(authService)
   },
-  500: {
+  '500': {
     retry: 3,
     timeout: 3000,
     fnc: Promise.resolve.bind(Promise)
   }
 };
 
-function _parseMessage(input = '') {
+function _parseMessage(input: string = '') {
   const [, detailedMsg] = input.replace(')', '').split('message: ');
   return detailedMsg;
 }
 
-export async function sendRequest(url, options = {}, retry = true) {
+export async function sendRequest(url: string, options: Object = {}, retry: boolean = true) {
   options.headers = updateHeaders(options.headers);
 
   const response = await fetch(url, options);
@@ -38,7 +39,7 @@ export async function sendRequest(url, options = {}, retry = true) {
   return await response.json();
 }
 
-function retry(asyncFn, args, timeout, attempt, resolveFn, rejectFn, e) {
+function retry(asyncFn: Function, args: any[], timeout: number, attempt: number, resolveFn: Function, rejectFn: Function, e?: Error) {
   if (attempt < 0) {
     return rejectFn(e);
   }
@@ -52,7 +53,7 @@ function retry(asyncFn, args, timeout, attempt, resolveFn, rejectFn, e) {
     });
 }
 
-const retryPromise = (url, options, timeout, attempt) => {
+const retryPromise = (url: string, options: Object, timeout: number, attempt: number) => {
   return new Promise((resolve, reject) => {
     retry(sendRequest, [url, options, false], timeout, attempt, resolve, reject)
   });

@@ -35,7 +35,7 @@ class HomePage extends React.Component {
     return (
       <div>
         <div className="row justify-content-between">
-          <button className="btn btn-primary mb-2" onClick={Modal.open.bind(this, modalIds.addOrder)}>
+          <button className="btn btn-primary mb-2" onClick={()=>Modal.open(this.props.dispatch, modalIds.addOrder)}>
             Place Order
           </button>
           <NavLink to='/deals' className="btn btn-primary mb-2">

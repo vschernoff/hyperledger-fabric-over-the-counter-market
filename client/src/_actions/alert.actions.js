@@ -1,3 +1,4 @@
+// @flow
 import {alertConstants} from '../_constants';
 
 const TIMEOUT = 5000;
@@ -7,15 +8,15 @@ export const alertActions = {
   clear
 };
 
-function success(message) {
-  return dispatch => {
+function success(message: string) {
+  return (dispatch: Function) => {
     setTimeout(() => {dispatch(clear())}, TIMEOUT);
     return dispatch({type: alertConstants.SUCCESS, message});
   };
 }
 
-function error(message) {
-  return dispatch => {
+function error(message: string) {
+  return (dispatch: Function) => {
     setTimeout(() => {dispatch(clear())}, TIMEOUT);
     return dispatch({type: alertConstants.ERROR, message});
   };

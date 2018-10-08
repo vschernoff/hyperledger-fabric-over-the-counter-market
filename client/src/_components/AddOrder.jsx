@@ -1,103 +1,124 @@
+// @flow
 import React from 'react';
+import type {ElementRef} from 'react';
 import {connect} from 'react-redux';
 import Switch from 'rc-switch';
 import Creatable from 'react-select/lib/Creatable';
 import {components} from 'react-select';
 
+import type {Order} from '../_types';
 import {orderActions} from '../_actions';
-import {commonConstants} from '../_constants/common.constants';
+import {commonConstants, DEFAULT_RATES} from '../_constants';
 
-const rateOptions = [
-  {value: '1.000', label: '1.000'},
-  {value: '0.875', label: '0.875'},
-  {value: '0.750', label: '0.750'},
-  {value: '0.625', label: '0.625'},
-  {value: '0.500', label: '0.500'},
-  {value: '0.375', label: '0.375'},
-  {value: '0.250', label: '0.250'},
-  {value: '0.125', label: '0.125'}
-];
+type Props = {
+  dispatch: Function,
+  initData: Order | any,
+  setSubmitFn: Function
+};
+type State = {
+  order: Order,
+  submitted: boolean
+};
 
-class AddOrder extends React.Component {
+const rateOptions = DEFAULT_RATES.reverse().map(v => ({
+  value: v, label: v
+}));
+
+class AddOrder extends React.Component<Props, State> {
+  amountInput: ?HTMLInputElement;
+
   constructor(props) {
     super(props);
 
     this.state = {
-      bid: {
-        amount: undefined,
-        rate: undefined,
-        type: 1,
-        created: false
+      order: {
+        key: {},
+        value: {
+          amount: undefined,
+          rate: undefined,
+          type: 1,
+        }
       },
       submitted: false
     };
     this._fill();
 
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.changeType = this.changeType.bind(this);
-    this.changeRate = this.changeRate.bind(this);
+    (this:any).handleChange = this.handleChange.bind(this);
+    (this:any).handleSubmit = this.handleSubmit.bind(this);
+    (this:any).changeType = this.changeType.bind(this);
+    (this:any).changeRate = this.changeRate.bind(this);
 
     //Modal integration
     this.props.setSubmitFn && this.props.setSubmitFn(this.handleSubmit);
   }
 
   componentDidMount() {
-    this.amountInput.focus();
+    const {amountInput} = this;
+    amountInput && amountInput.focus();
   }
 
   _fill() {
     if(this.props.initData && this.props.initData.key) {
-      this.state.bid.id = this.props.initData.key.id;
-      this.state.bid.amount = this.props.initData.value.amount;
-      this.state.bid.rate = this.props.initData.value.rate;
-      this.state.bid.created = true;
+      this.state.order.key.id = this.props.initData.key.id;
+      this.state.order.value.amount = this.props.initData.value.amount;
+      this.state.order.value.rate = this.props.initData.value.rate;
     }
   }
 
-  changeType(newV) {
+  changeType(newV: boolean) {
+    const {order} = this.state;
     this.setState({
-      bid: {
-        ...this.state.bid,
-        type: newV === true ? 0 : 1
+      order: {
+        ...order,
+        value: {
+          ...order.value,
+          type: newV === true ? 0 : 1
+        }
       }
     });
   }
 
-  changeRate(newV) {
+  changeRate(newV: {value: string}) {
+    const {order} = this.state;
     this.setState({
-      bid: {
-        ...this.state.bid,
-        rate: (newV && newV.value) || ''
+      order: {
+        ...order,
+        value: {
+          ...order.value,
+          rate: (newV && newV.value) || ''
+        }
       }
     });
   }
 
-  handleChange(event) {
+  handleChange(event: SyntheticInputEvent<>) {
     const {name, value} = event.target;
-    const {bid} = this.state;
+    const {order} = this.state;
     this.setState({
-      bid: {
-        ...bid,
-        [name]: value
+      order: {
+        ...order,
+        value: {
+          ...order.value,
+          [name]: value
+        }
       },
       submitted: false
     });
   }
 
-  handleSubmit(event) {
+  handleSubmit(event: SyntheticEvent<>) {
     event.preventDefault();
 
     this.setState({submitted: true});
-    const {bid} = this.state;
-    if (bid.amount && bid.rate) {
-      this.props.dispatch(orderActions[bid.id ? 'edit' : 'add'](bid));
+    const {order} = this.state;
+    if (order.value.amount && order.value.rate) {
+      this.props.dispatch(orderActions[order.key.id ? 'edit' : 'add'](order));
     }
   }
 
 
   render() {
-    const {bid, submitted} = this.state;
+    const {order, submitted} = this.state;
     return (
       <form name="form" onSubmit={this.handleSubmit}>
         <div className='form-group'>
@@ -107,11 +128,11 @@ class AddOrder extends React.Component {
             <div className="input-group-prepend">
               <span className="input-group-text">{commonConstants.CURRENCY_SIGN}</span>
             </div>
-            <input type="text" className={"form-control" + (submitted && !bid.amount ? ' is-invalid' : '')}
-                      name="amount" value={bid.amount}
+            <input type="text" className={"form-control" + (submitted && !order.value.amount ? ' is-invalid' : '')}
+                      name="amount" value={order.value.amount}
                       ref={(input) => { this.amountInput = input; }}
                       onChange={this.handleChange}/>
-            {submitted && !bid.amount && <div className="text-danger invalid-feedback">Amount is required</div>}
+            {submitted && !order.value.amount && <div className="text-danger invalid-feedback">Amount is required</div>}
           </div>
         </div>
         <Creatable
@@ -120,7 +141,7 @@ class AddOrder extends React.Component {
           onChange={this.changeRate}
           placeholder="Select or type any value..."
           options={rateOptions}
-          value={bid.rate ? {value: bid.rate, label: bid.rate} : undefined}
+          value={order.value.rate ? {value: order.value.rate, label: order.value.rate} : undefined}
           components={{ Control: (props) => (
             <div className='form-group'>
               <label htmlFor="rate">Rate</label>
@@ -129,14 +150,14 @@ class AddOrder extends React.Component {
                   <span className="input-group-text">{commonConstants.RATE_SIGN}</span>
                 </div>
                 <components.Control
-                  className={"form-control" + (submitted && !bid.rate ? ' is-invalid' : '')} {...props} />
-                {submitted && !bid.rate && <div className="text-danger invalid-feedback">Rate is required</div>}
+                  className={"form-control" + (submitted && !order.value.rate ? ' is-invalid' : '')} {...props} />
+                {submitted && !order.value.rate && <div className="text-danger invalid-feedback">Rate is required</div>}
               </div>
             </div>
           ) }}
         />
 
-        {!bid.id && <div>
+        {!order.key.id && <div>
           <Switch
             name="type"
             onChange={this.changeType}
@@ -150,10 +171,10 @@ class AddOrder extends React.Component {
 }
 
 function mapStateToProps(state) {
-  const {bid} = state;
+  const {order} = state;
 
   return {
-    bid
+    order
   }
 }
 

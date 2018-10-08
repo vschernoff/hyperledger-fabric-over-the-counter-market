@@ -1,3 +1,4 @@
+// @flow
 export * from './AddOrder';
 export * from './Chart';
 export * from './DealsTable';

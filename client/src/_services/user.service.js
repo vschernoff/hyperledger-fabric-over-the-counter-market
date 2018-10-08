@@ -1,3 +1,4 @@
+// @flow
 import {authService} from './auth.service';
 import {set, clear} from '../_helpers';
 
@@ -6,7 +7,7 @@ export const userService = {
   logout
 };
 
-function login(username, orgName) {
+function login(username: string, orgName: string) {
   set({name: username, org: orgName});
   return authService.obtainToken();
 }

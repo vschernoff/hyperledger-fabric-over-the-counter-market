@@ -1,7 +1,8 @@
+// @flow
 const userKey = 'user';
 const tokenKey = 'token';
 
-export function set(user) {
+export function set(user: Object) {
   localStorage.setItem(userKey, JSON.stringify(user));
   localStorage.setItem(tokenKey, user.token);
 }

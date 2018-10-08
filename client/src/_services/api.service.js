@@ -1,3 +1,4 @@
+// @flow
 import {sendRequest} from '../_helpers/request';
 import {configService} from './config.service';
 
@@ -5,16 +6,15 @@ function _getPeer() {
   return configService.getPeers()[0];
 }
 
-export function query(channel, chaincode, fcn, args = []) {
+export function query(channel: string, chaincode: string, fcn: string, args: any[] = []) {
   const requestOptions = {
     method: 'GET'
   };
-  args = JSON.stringify(args);
   const {org} = configService.get();
   const params = {
     peer: `${org}/${_getPeer()}`,
     fcn,
-    args
+    args: JSON.stringify(args)
   };
 
   const url = new URL(`${window.location.origin}/channels/${channel}/chaincodes/${chaincode}`);
@@ -23,14 +23,14 @@ export function query(channel, chaincode, fcn, args = []) {
   return sendRequest(`${url.pathname}${url.search}`, requestOptions);
 }
 
-export function invoke(channel, chaincode, functionName, args) {
+export function invoke(channel: string, chaincode: string, fcn: string, args: any[] = []) {
   const {org} = configService.get();
   args = args.map(arg => arg + '');
   const requestOptions = {
     method: 'POST',
     body: JSON.stringify({
       peers: [`${org}/${_getPeer()}`],
-      fcn: functionName,
+      fcn,
       args
     })
   };
@@ -38,7 +38,7 @@ export function invoke(channel, chaincode, functionName, args) {
   return sendRequest(`/channels/${channel}/chaincodes/${chaincode}`, requestOptions);
 }
 
-export function login(user, retry = true) {
+export function login(user: Object, retry?: boolean = true) {
   const requestOptions = {
     method: 'POST',
     body: JSON.stringify({username: user.name, orgName: user.org})

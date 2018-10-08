@@ -111,7 +111,7 @@ class SummaryPage extends React.Component {
       <div>
         <div className="row">
           <div className="col col-form-label">
-            <button className="btn" onClick={this.refreshData}>Refresh <FontAwesomeIcon icon={faSync}/></button>
+            <button className="btn btn-primary" onClick={this.refreshData}>Refresh <FontAwesomeIcon icon={faSync}/></button>
           </div>
         </div>
         <div className="row">

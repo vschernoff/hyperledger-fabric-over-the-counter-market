@@ -83,9 +83,8 @@ class DealsPage extends React.Component {
       parameters[key] = parameters[key] === null ? '0'  : parameters[key];
     });
 
-    parameters[parametersMap.creator] ?
-      this.props.dispatch(dealActions.getForCreatorByPeriod([parameters[parametersMap.from], parameters[parametersMap.to]]))
-      : this.props.dispatch(dealActions.getByPeriod([parameters[parametersMap.from], parameters[parametersMap.to]]));
+    dealActions[parameters[parametersMap.creator] ? 'getForCreatorByPeriod' : 'getByPeriod']
+    ([parameters[parametersMap.from], parameters[parametersMap.to]]);
   }
 
   render() {
