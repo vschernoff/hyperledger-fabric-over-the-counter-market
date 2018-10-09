@@ -1,4 +1,6 @@
+// @flow
 import {config, getChannels, getChaincodes} from './api.service';
+import type {Config} from '../_types';
 
 export const configService = {
   load,
@@ -9,15 +11,17 @@ export const configService = {
   getChaincodes: loadChaincodes
 };
 
-let localConfig = {};
-let isFetching = false;
-let reqPromise;
+let localConfig: Config = {
+  org: ''
+};
+let isFetching: boolean = false;
+let reqPromise: Promise<Config>;
 
-function get() {
+function get(): Config {
   return localConfig;
 }
 
-function load() {
+function load(): Promise<Config> {
   if (isFetching) {
     return reqPromise;
   }
@@ -33,14 +37,14 @@ function load() {
 }
 
 // load secured information, like chaincodes, channels
-function update() {
+function update(): Promise<any> {
   return Promise.all([
     loadChannels(),
     loadChaincodes()
   ]);
 }
 
-function _extend(asyncFn, cfgKey, responseKey) {
+function _extend(asyncFn: Function, cfgKey: string, responseKey): Promise<Object> {
   if (!localConfig[cfgKey]) {
     if (asyncFn.promise) {
       return asyncFn.promise;
@@ -62,18 +66,19 @@ function _extend(asyncFn, cfgKey, responseKey) {
   return Promise.resolve(localConfig[cfgKey]);
 }
 
-function loadChannels() {
+function loadChannels(): Promise<Object> {
   return _extend(getChannels, 'channels', 'channels');
 }
 
-function loadChaincodes() {
+function loadChaincodes(): Promise<Object> {
   return _extend(getChaincodes, 'chaincodes', 'chaincodes');
 }
 
-function getPeers() {
+function getPeers(): string[] {
   if (localConfig.peers) {
     return localConfig.peers;
   }
+  // $FlowFixMe
   const orgConfig = localConfig['network-config'][localConfig.org];
   localConfig.peers = Object.keys(orgConfig).filter(k => k.startsWith('peer'));
   return localConfig.peers;

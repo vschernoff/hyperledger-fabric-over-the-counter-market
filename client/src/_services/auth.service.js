@@ -1,13 +1,14 @@
 // @flow
 import {set, get, clear} from '../_helpers';
 import {login, extendConfig} from './api.service';
+import type {User} from '../_types';
 
 export const authService = {
   obtainToken
 };
 let fetching = false;
 let promise;
-async function obtainToken() {
+async function obtainToken(): Promise<User | any> {
   const user = get();
   if (!user) {
     fetching = false;

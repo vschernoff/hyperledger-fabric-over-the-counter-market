@@ -1,4 +1,5 @@
 // @flow
 export type User = {
-  org: string
+  org: string,
+  token: string
 }

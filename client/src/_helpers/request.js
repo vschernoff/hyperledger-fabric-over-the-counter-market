@@ -15,12 +15,12 @@ const forwardRequestByError = {
   }
 };
 
-function _parseMessage(input: string = '') {
+function _parseMessage(input: string = ''): string {
   const [, detailedMsg] = input.replace(')', '').split('message: ');
-  return detailedMsg;
+  return detailedMsg || input;
 }
 
-export async function sendRequest(url: string, options: Object = {}, retry: boolean = true) {
+export async function sendRequest(url: string, options: Object = {}, retry: boolean = true): Promise<any> {
   options.headers = updateHeaders(options.headers);
 
   const response = await fetch(url, options);

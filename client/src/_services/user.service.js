@@ -7,7 +7,7 @@ export const userService = {
   logout
 };
 
-function login(username: string, orgName: string) {
+function login(username: string, orgName: string): * {
   set({name: username, org: orgName});
   return authService.obtainToken();
 }

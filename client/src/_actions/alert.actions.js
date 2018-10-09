@@ -1,5 +1,6 @@
 // @flow
 import {alertConstants} from '../_constants';
+import type {Action, ThunkAction, Dispatch} from '../_types/Redux';
 
 const TIMEOUT = 5000;
 export const alertActions = {
@@ -8,20 +9,20 @@ export const alertActions = {
   clear
 };
 
-function success(message: string) {
-  return (dispatch: Function) => {
+function success(message: string): ThunkAction {
+  return (dispatch: Dispatch) => {
     setTimeout(() => {dispatch(clear())}, TIMEOUT);
     return dispatch({type: alertConstants.SUCCESS, message});
   };
 }
 
-function error(message: string) {
-  return (dispatch: Function) => {
+function error(message: string): ThunkAction {
+  return (dispatch: Dispatch) => {
     setTimeout(() => {dispatch(clear())}, TIMEOUT);
     return dispatch({type: alertConstants.ERROR, message});
   };
 }
 
-function clear() {
+function clear(): Action {
   return {type: alertConstants.CLEAR};
 }

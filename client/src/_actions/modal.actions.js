@@ -1,24 +1,23 @@
-import {modalConstants} from '../_constants';
+// @flow
+import {modalConstants} from '../_constants'
+import type {Action} from '../_types';
 
 export const modalActions = {
   register,
   show,
-  hide,
-  setData
+  hide
 };
 
-function register(modalId) {
+type ModalAction = Action & {modalId: string};
+
+function register(modalId: string): ModalAction {
   return {type: modalConstants.HIDE, modalId};
 }
 
-function show(modalId, object) {
+function show(modalId: string, object: {}): ModalAction {
   return {type: modalConstants.SHOW, modalId, object};
 }
 
-function hide(modalId) {
+function hide(modalId: string): ModalAction {
   return {type: modalConstants.HIDE, modalId};
-}
-
-function setData(modalId, data) {
-  return {type: modalConstants.SET_DATA, modalId, data};
 }

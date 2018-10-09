@@ -1,6 +1,7 @@
 // @flow
 import * as apiService from './api.service';
 import {configService} from './config.service';
+import type {Deal, ListResponse} from '../_types';
 
 export const dealService = {
   getAll,
@@ -22,7 +23,7 @@ const CHANNELS = {
   common: 'common'
 };
 
-async function getAll() {
+async function getAll(): Promise<ListResponse<Deal>> {
   const channels = await configService.getChannels();
   const chaincodes = await configService.getChaincodes();
   return await apiService.query(
@@ -31,7 +32,7 @@ async function getAll() {
     ACTIONS.getAll);
 }
 
-async function getByPeriod(period: string[]) {
+async function getByPeriod(period: string[]): Promise<ListResponse<Deal>> {
   const channels = await configService.getChannels();
   const chaincodes = await configService.getChaincodes();
   return await apiService.query(
@@ -41,7 +42,7 @@ async function getByPeriod(period: string[]) {
     period);
 }
 
-async function getForCreatorByPeriod(period: string[]) {
+async function getForCreatorByPeriod(period: string[]): Promise<ListResponse<Deal>> {
   const channels = await configService.getChannels();
   const chaincodes = await configService.getChaincodes();
   return await apiService.query(

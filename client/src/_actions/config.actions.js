@@ -1,12 +1,16 @@
+// @flow
 import {configConstants} from '../_constants';
 import {configService} from '../_services';
+import type {Action, ThunkAction, Dispatch, ErrorAction} from '../_types/Redux';
 
 export const configActions = {
   get
 };
 
-function get() {
-  return dispatch => {
+type SuccessAction = Action & {config: {}};
+
+function get(): ThunkAction {
+  return (dispatch: Dispatch) => {
     configService.load()
       .then(
          config => {
@@ -18,10 +22,10 @@ function get() {
       );
   };
 
-  function success(config) {
+  function success(config): SuccessAction {
     return {type: configConstants.SUCCESS, config}
   }
-  function failure(error) {
+  function failure(error): ErrorAction {
     return {type: configConstants.FAILURE, error}
   }
 }

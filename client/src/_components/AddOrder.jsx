@@ -1,6 +1,5 @@
 // @flow
 import React from 'react';
-import type {ElementRef} from 'react';
 import {connect} from 'react-redux';
 import Switch from 'rc-switch';
 import Creatable from 'react-select/lib/Creatable';
@@ -21,7 +20,7 @@ type State = {
 };
 
 const rateOptions = DEFAULT_RATES.reverse().map(v => ({
-  value: v, label: v
+  value: v + '', label: v + ''
 }));
 
 class AddOrder extends React.Component<Props, State> {
@@ -30,18 +29,19 @@ class AddOrder extends React.Component<Props, State> {
   constructor(props) {
     super(props);
 
+    const initData = this.props.initData || {
+      key: {},
+      value: {
+        amount: undefined,
+        rate: undefined,
+        type: 1,
+      }
+    };
+
     this.state = {
-      order: {
-        key: {},
-        value: {
-          amount: undefined,
-          rate: undefined,
-          type: 1,
-        }
-      },
+      order: initData,
       submitted: false
     };
-    this._fill();
 
     (this:any).handleChange = this.handleChange.bind(this);
     (this:any).handleSubmit = this.handleSubmit.bind(this);
@@ -55,14 +55,6 @@ class AddOrder extends React.Component<Props, State> {
   componentDidMount() {
     const {amountInput} = this;
     amountInput && amountInput.focus();
-  }
-
-  _fill() {
-    if(this.props.initData && this.props.initData.key) {
-      this.state.order.key.id = this.props.initData.key.id;
-      this.state.order.value.amount = this.props.initData.value.amount;
-      this.state.order.value.rate = this.props.initData.value.rate;
-    }
   }
 
   changeType(newV: boolean) {

@@ -76,15 +76,15 @@ class DealsPage extends React.Component {
     this.props.dispatch(dealActions.getAll(shadowMode));
   }
 
-  handleSubmit(event, parameters) {
+  handleSubmit(event, params) {
     event.preventDefault();
 
-    Object.keys(parameters).map(function(key) {
-      parameters[key] = parameters[key] === null ? '0'  : parameters[key];
+    Object.keys(params).forEach(function(key) {
+      params[key] = params[key] || '0';
     });
 
-    dealActions[parameters[parametersMap.creator] ? 'getForCreatorByPeriod' : 'getByPeriod']
-    ([parameters[parametersMap.from], parameters[parametersMap.to]]);
+    const fnName = params[parametersMap.creator] ? 'getForCreatorByPeriod' : 'getByPeriod';
+    dealActions[fnName]([params[parametersMap.from], params[parametersMap.to]]);
   }
 
   render() {

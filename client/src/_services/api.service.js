@@ -2,11 +2,15 @@
 import {sendRequest} from '../_helpers/request';
 import {configService} from './config.service';
 
-function _getPeer() {
+type LoginResponse = {
+  token: string
+}
+
+function _getPeer(): string {
   return configService.getPeers()[0];
 }
 
-export function query(channel: string, chaincode: string, fcn: string, args: any[] = []) {
+export function query(channel: string, chaincode: string, fcn: string, args: any[] = []): * {
   const requestOptions = {
     method: 'GET'
   };
@@ -23,7 +27,7 @@ export function query(channel: string, chaincode: string, fcn: string, args: any
   return sendRequest(`${url.pathname}${url.search}`, requestOptions);
 }
 
-export function invoke(channel: string, chaincode: string, fcn: string, args: any[] = []) {
+export function invoke(channel: string, chaincode: string, fcn: string, args: any[] = []): * {
   const {org} = configService.get();
   args = args.map(arg => arg + '');
   const requestOptions = {
@@ -38,7 +42,7 @@ export function invoke(channel: string, chaincode: string, fcn: string, args: an
   return sendRequest(`/channels/${channel}/chaincodes/${chaincode}`, requestOptions);
 }
 
-export function login(user: Object, retry?: boolean = true) {
+export function login(user: Object, retry?: boolean = true): Promise<LoginResponse> {
   const requestOptions = {
     method: 'POST',
     body: JSON.stringify({username: user.name, orgName: user.org})
@@ -47,19 +51,19 @@ export function login(user: Object, retry?: boolean = true) {
   return sendRequest(`/users`, requestOptions, retry);
 }
 
-export function getChannels() {
+export function getChannels(): * {
   return sendRequest(`/channels?peer=${_getPeer()}`);
 }
 
-export function getChaincodes() {
+export function getChaincodes(): * {
   return sendRequest(`/chaincodes?peer=${_getPeer()}`);
 }
 
-export function extendConfig() {
+export function extendConfig(): * {
   return configService.update();
 }
 
-export function config() {
+export function config(): * {
   const requestOptions = {
     method: 'GET'
   };

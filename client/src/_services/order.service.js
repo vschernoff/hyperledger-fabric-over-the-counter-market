@@ -1,7 +1,7 @@
 // @flow
 import * as apiService from './api.service';
 import {configService} from './config.service';
-import type {Order} from '../_types';
+import type {Order, ListResponse} from '../_types';
 export const orderService = {
   getAll,
   add,
@@ -26,7 +26,7 @@ const CHANNELS = {
   common: 'common'
 };
 
-async function getAll() {
+async function getAll(): Promise<ListResponse<Order>> {
   const channels = await configService.getChannels();
   const chaincodes = await configService.getChaincodes();
   return apiService.query(
@@ -35,7 +35,7 @@ async function getAll() {
     ACTIONS.getAll);
 }
 
-async function add(order: Order) {
+async function add(order: Order): Promise<any> {
   const channels = await configService.getChannels();
   const chaincodes = await configService.getChaincodes();
   return apiService.invoke(
@@ -46,7 +46,7 @@ async function add(order: Order) {
   );
 }
 
-async function edit(order: Order) {
+async function edit(order: Order): Promise<any> {
   const channels = await configService.getChannels();
   const chaincodes = await configService.getChaincodes();
   return apiService.invoke(
@@ -57,7 +57,7 @@ async function edit(order: Order) {
   );
 }
 
-async function accept(order: Order) {
+async function accept(order: Order): Promise<any> {
   const channels = await configService.getChannels();
   const chaincodes = await configService.getChaincodes();
   return apiService.invoke(
@@ -68,7 +68,7 @@ async function accept(order: Order) {
   );
 }
 
-async function cancel(order: Order) {
+async function cancel(order: Order): Promise<any> {
   const channels = await configService.getChannels();
   const chaincodes = await configService.getChaincodes();
   return apiService.invoke(

@@ -1,16 +1,17 @@
+
 import {userConstants} from '../_constants';
 import {userService} from '../_services';
 import {alertActions} from './';
 import {history} from '../_helpers';
+import type {Action, ThunkAction, Dispatch, ErrorAction, UserAction} from '../_types';
 
 export const userActions = {
   login,
   logout
 };
 
-
-function login(username, orgName) {
-  return dispatch => {
+function login(username: string, orgName: string): ThunkAction {
+  return (dispatch: Dispatch) => {
     dispatch(request({username}));
 
     userService.login(username, orgName)
@@ -26,26 +27,26 @@ function login(username, orgName) {
       );
   };
 
-  function request(user) {
+  function request(user): UserAction {
     return {type: userConstants.LOGIN_REQUEST, user}
   }
 
-  function success(user) {
+  function success(user): UserAction {
     return {type: userConstants.LOGIN_SUCCESS, user}
   }
 
-  function failure(error) {
+  function failure(error): ErrorAction {
     return {type: userConstants.LOGIN_FAILURE, error}
   }
 }
 
-function logout() {
-  return dispatch => {
+function logout(): ThunkAction {
+  return (dispatch: Dispatch) => {
     userService.logout();
     dispatch(success());
   };
 
-  function success() {
+  function success(): Action {
     return {type: userConstants.LOGOUT};
   }
 }

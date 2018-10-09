@@ -167,7 +167,7 @@ class SummaryPage extends React.Component {
 }
 
 function mapStateToProps(state) {
-  const {bids, deals, authentication, modals} = state;
+  const {deals, authentication, modals} = state;
   const {user} = authentication;
   return {
     user,
