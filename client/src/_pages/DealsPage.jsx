@@ -41,7 +41,8 @@ const propertyFilterContainer = [
     label: "From",
     state: {nameProp: "selected", name: parametersMap.from, value: moment()},
     properties: {
-      isClearable: "true"
+      isClearable: "true",
+      autoComplete: "off"
     }
   },
   {
@@ -49,7 +50,8 @@ const propertyFilterContainer = [
     label: "To",
     state: {nameProp: "selected", name: parametersMap.to, value: moment()},
     properties: {
-      isClearable: "true"
+      isClearable: "true",
+      autoComplete: "off"
     }
   },
   {
@@ -76,15 +78,15 @@ class DealsPage extends React.Component {
     this.props.dispatch(dealActions.getAll(shadowMode));
   }
 
-  handleSubmit(event, params) {
-    event.preventDefault();
+  handleSubmit(params, event = null) {
+    event || event.preventDefault();
 
     Object.keys(params).forEach(function(key) {
-      params[key] = params[key] || '0';
+      params[key] = key === parametersMap.creator ? params[key] : params[key] || '0';
     });
 
     const fnName = params[parametersMap.creator] ? 'getForCreatorByPeriod' : 'getByPeriod';
-    dealActions[fnName]([params[parametersMap.from], params[parametersMap.to]]);
+    this.props.dispatch(dealActions[fnName]([params[parametersMap.from], params[parametersMap.to]]));
   }
 
   render() {

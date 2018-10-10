@@ -21,7 +21,8 @@ class FilterContainer extends React.Component {
         label: "From",
         state: {nameProp: "selected", name: "fromDate", value: moment()},
         properties: {
-          isClearable: "true"
+          isClearable: "true",
+          autoComplete: "off"
         }
       },
       {
@@ -29,7 +30,8 @@ class FilterContainer extends React.Component {
         label: "To",
         state: {nameProp: "selected", name: "toDate", value: moment()},
         properties: {
-          isClearable: "true"
+          isClearable: "true",
+          autoComplete: "off"
         }
       },
       {
@@ -44,19 +46,19 @@ class FilterContainer extends React.Component {
 
     this.instrumentsNames = (propertyFilterContainer || propertyFilterContainerDefault);
 
-    let states = {};
+    let filterStates = {};
 
     this.instruments = this.instrumentsNames.map(
       element => {
         if (typeof components[element.type] !== "undefined") {
-          states[element.state.name] = element.state.value;
+          filterStates[element.state.name] = element.state.value;
           return components[element.type]
         } else {
           throw new Error(`There is no such Component ${element.type}`);
         }
       }
     );
-    this.state = states;
+    this.state = {filterStates};
 
     this.handleSubmit = handleSubmit.bind(this);
   }
@@ -64,19 +66,22 @@ class FilterContainer extends React.Component {
   handleChange(state, value) {
     value = (value && typeof value !== "undefined") ? (typeof value.target !== "undefined" ? (value.target.type === 'checkbox' ? value.target.checked : value) : value) : value;
 
-    this.setState({
-      [state]: value
-    });
+    this.setState(prevState => ({
+      filterStates: {
+        ...prevState.filterStates,
+        [state]: value
+      }
+    }))
   }
 
   prepareSubmit(event) {
     let parameters = {};
     this.instrumentsNames.map(
       element => {
-        return parameters[element.state.name] = moment.isMoment(this.state[element.state.name]) ? this.state[element.state.name].format('X') : this.state[element.state.name];
+        return parameters[element.state.name] = moment.isMoment(this.state.filterStates[element.state.name]) ? this.state.filterStates[element.state.name].format('X') : this.state.filterStates[element.state.name];
       }
     );
-    this.handleSubmit(event, parameters);
+    this.handleSubmit(parameters, event);
   }
 
   render() {
@@ -84,7 +89,7 @@ class FilterContainer extends React.Component {
       <form onSubmit={this.prepareSubmit.bind(this)}>
         {this.instruments.map((Instrument, index) => {
           let proporties = this.instrumentsNames[index].properties;
-          proporties[this.instrumentsNames[index].state.nameProp] = this.state[this.instrumentsNames[index].state.name];
+          proporties[this.instrumentsNames[index].state.nameProp] = this.state.filterStates[this.instrumentsNames[index].state.name];
 
           return (
             <div className="form-group row">
