@@ -40,6 +40,7 @@ const propertyFilterContainer = [
     type: "DatePicker",
     label: "From",
     state: {nameProp: "selected", name: parametersMap.from, value: moment()},
+    defaultValue: '0',
     properties: {
       isClearable: "true",
       autoComplete: "off"
@@ -49,6 +50,7 @@ const propertyFilterContainer = [
     type: "DatePicker",
     label: "To",
     state: {nameProp: "selected", name: parametersMap.to, value: moment()},
+    defaultValue: '0',
     properties: {
       isClearable: "true",
       autoComplete: "off"
@@ -58,6 +60,7 @@ const propertyFilterContainer = [
     type: "CheckBox",
     label: "",
     state: {nameProp: "checked", name: parametersMap.creator, value: false},
+    defaultValue: false,
     properties: {
       label: "Only my Deals"
     }
@@ -80,10 +83,6 @@ class DealsPage extends React.Component {
 
   handleSubmit(params, event = null) {
     event || event.preventDefault();
-
-    Object.keys(params).forEach(function(key) {
-      params[key] = key === parametersMap.creator ? params[key] : params[key] || '0';
-    });
 
     const fnName = params[parametersMap.creator] ? 'getForCreatorByPeriod' : 'getByPeriod';
     this.props.dispatch(dealActions[fnName]([params[parametersMap.from], params[parametersMap.to]]));

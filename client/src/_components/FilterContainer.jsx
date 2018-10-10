@@ -20,6 +20,7 @@ class FilterContainer extends React.Component {
         type: "DatePicker",
         label: "From",
         state: {nameProp: "selected", name: "fromDate", value: moment()},
+        defaultValue: '0',
         properties: {
           isClearable: "true",
           autoComplete: "off"
@@ -29,6 +30,7 @@ class FilterContainer extends React.Component {
         type: "DatePicker",
         label: "To",
         state: {nameProp: "selected", name: "toDate", value: moment()},
+        defaultValue: '0',
         properties: {
           isClearable: "true",
           autoComplete: "off"
@@ -38,6 +40,7 @@ class FilterContainer extends React.Component {
         type: "CheckBox",
         label: "",
         state: {nameProp: "checked", name: "myDeals", value: false},
+        defaultValue: false,
         properties: {
           label: "Only my Deals"
         }
@@ -78,7 +81,7 @@ class FilterContainer extends React.Component {
     let parameters = {};
     this.instrumentsNames.map(
       element => {
-        return parameters[element.state.name] = moment.isMoment(this.state.filterStates[element.state.name]) ? this.state.filterStates[element.state.name].format('X') : this.state.filterStates[element.state.name];
+        return parameters[element.state.name] = moment.isMoment(this.state.filterStates[element.state.name]) ? this.state.filterStates[element.state.name].format('X') : this.state.filterStates[element.state.name] === null ? element.defaultValue : this.state.filterStates[element.state.name];
       }
     );
     this.handleSubmit(parameters, event);
