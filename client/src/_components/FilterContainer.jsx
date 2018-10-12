@@ -15,39 +15,7 @@ class FilterContainer extends React.Component {
     super(props);
     const {propertyFilterContainer, handleSubmit} = this.props;
 
-    const propertyFilterContainerDefault = [
-      {
-        type: "DatePicker",
-        label: "From",
-        state: {nameProp: "selected", name: "fromDate", value: moment()},
-        defaultValue: '0',
-        properties: {
-          isClearable: "true",
-          autoComplete: "off"
-        }
-      },
-      {
-        type: "DatePicker",
-        label: "To",
-        state: {nameProp: "selected", name: "toDate", value: moment()},
-        defaultValue: '0',
-        properties: {
-          isClearable: "true",
-          autoComplete: "off"
-        }
-      },
-      {
-        type: "CheckBox",
-        label: "",
-        state: {nameProp: "checked", name: "myDeals", value: false},
-        defaultValue: false,
-        properties: {
-          label: "Only my Deals"
-        }
-      }
-    ];
-
-    this.instrumentsNames = (propertyFilterContainer || propertyFilterContainerDefault);
+    this.instrumentsNames = propertyFilterContainer || [];
 
     let filterStates = {};
 
@@ -88,6 +56,10 @@ class FilterContainer extends React.Component {
   }
 
   render() {
+    if(this.instrumentsNames.length === 0) {
+      return null;
+    }
+
     return (
       <form onSubmit={this.prepareSubmit.bind(this)}>
         {this.instruments.map((Instrument, index) => {
