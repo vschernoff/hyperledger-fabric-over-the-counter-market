@@ -35,7 +35,7 @@ const columns = [{
   accessor: rec => formatter.datetime(new Date(rec.value.timestamp * 1000))
 }];
 
-const propertyFilterContainer = [
+const itemsFilterContainer = [
   {
     type: "DatePicker",
     label: "From",
@@ -69,18 +69,6 @@ const propertyFilterContainer = [
 
 class DealsPage extends React.Component {
 
-  componentDidMount() {
-    this.timerId = setInterval(this.refreshData.bind(this, true), 50000);
-  }
-
-  componentWillUnmount() {
-    clearInterval(this.timerId);
-  }
-
-  refreshData(shadowMode) {
-    this.props.dispatch(dealActions.getAll(shadowMode));
-  }
-
   handleSubmit(params, event = null) {
     event || event.preventDefault();
 
@@ -88,18 +76,32 @@ class DealsPage extends React.Component {
     this.props.dispatch(dealActions[fnName]([params[parametersMap.from], params[parametersMap.to]]));
   }
 
+  setParams(params) {
+    this.filterParams = params;
+  }
+
+  refreshData() {
+    if (this.filterParams && this.filterParams[parametersMap.creator] !== 'undefined') {
+      const fnName = this.filterParams[parametersMap.creator] ? 'getForCreatorByPeriod' : 'getByPeriod';
+      this.props.dispatch(dealActions[fnName]([this.filterParams[parametersMap.from].format('X'), this.filterParams[parametersMap.to].format('X')]));
+    } else {
+      this.props.dispatch(dealActions.getAll());
+    }
+  }
+
   render() {
     return (
       <div>
         <div className="row">
           <div className="col">
-            <FilterContainer propertyFilterContainer={propertyFilterContainer}
-                             handleSubmit={this.handleSubmit.bind(this)}/>
+            <FilterContainer items={itemsFilterContainer}
+                             handleSubmit={this.handleSubmit.bind(this)}
+                             setParams={this.setParams.bind(this)}/>
           </div>
         </div>
         <div className="row">
           <div className="col">
-            <DealsTable columns={columns}/>
+            <DealsTable columns={columns} refreshData={this.refreshData.bind(this)} />
           </div>
         </div>
         <div className="row">

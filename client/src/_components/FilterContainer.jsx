@@ -10,16 +10,51 @@ const components = {
   CheckBox
 };
 
+/*
+items property example:
+
+const itemsFilterContainer = [
+  {
+    type: "DatePicker",
+    label: "From",
+    state: {nameProp: "selected", name: parametersMap.from, value: moment()},
+    defaultValue: '0',
+    properties: {
+      isClearable: "true",
+      autoComplete: "off"
+    }
+  },
+  {
+    type: "DatePicker",
+    label: "To",
+    state: {nameProp: "selected", name: parametersMap.to, value: moment()},
+    defaultValue: '0',
+    properties: {
+      isClearable: "true",
+      autoComplete: "off"
+    }
+  },
+  {
+    type: "CheckBox",
+    label: "",
+    state: {nameProp: "checked", name: parametersMap.creator, value: false},
+    defaultValue: false,
+    properties: {
+      label: "Only my Deals"
+    }
+  }
+];
+ */
 class FilterContainer extends React.Component {
   constructor(props) {
     super(props);
-    const {propertyFilterContainer, handleSubmit} = this.props;
+    const {items, handleSubmit, setParams} = this.props;
 
-    this.instrumentsNames = propertyFilterContainer || [];
+    this.items = items || [];
 
     let filterStates = {};
 
-    this.instruments = this.instrumentsNames.map(
+    this.instruments = this.items.map(
       element => {
         if (typeof components[element.type] !== "undefined") {
           filterStates[element.state.name] = element.state.value;
@@ -32,6 +67,9 @@ class FilterContainer extends React.Component {
     this.state = {filterStates};
 
     this.handleSubmit = handleSubmit.bind(this);
+    this.setParams = setParams.bind(this);
+
+    this.setParams(filterStates);
   }
 
   handleChange(state, value) {
@@ -47,7 +85,7 @@ class FilterContainer extends React.Component {
 
   prepareSubmit(event) {
     let parameters = {};
-    this.instrumentsNames.map(
+    this.items.map(
       element => {
         return parameters[element.state.name] = moment.isMoment(this.state.filterStates[element.state.name]) ? this.state.filterStates[element.state.name].format('X') : this.state.filterStates[element.state.name] === null ? element.defaultValue : this.state.filterStates[element.state.name];
       }
@@ -56,24 +94,24 @@ class FilterContainer extends React.Component {
   }
 
   render() {
-    if(this.instrumentsNames.length === 0) {
+    if (this.items.length === 0) {
       return null;
     }
 
     return (
       <form onSubmit={this.prepareSubmit.bind(this)}>
         {this.instruments.map((Instrument, index) => {
-          let proporties = this.instrumentsNames[index].properties;
-          proporties[this.instrumentsNames[index].state.nameProp] = this.state.filterStates[this.instrumentsNames[index].state.name];
+          let proporties = this.items[index].properties;
+          proporties[this.items[index].state.nameProp] = this.state.filterStates[this.items[index].state.name];
 
           return (
             <div className="form-group row">
               <label htmlFor={"input" + index}
-                     className="col-sm-2 col-form-label">{this.instrumentsNames[index].label}</label>
+                     className="col-sm-2 col-form-label">{this.items[index].label}</label>
               <div className="col-sm-10">
                 <Instrument
                   id={"input" + index}
-                  onChange={this.handleChange.bind(this, this.instrumentsNames[index].state.name)}
+                  onChange={this.handleChange.bind(this, this.items[index].state.name)}
                   {...proporties}
                 />
               </div>

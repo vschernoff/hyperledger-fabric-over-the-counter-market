@@ -1,6 +1,12 @@
 import {dealConstants} from '../_constants';
 
 export function deals(state = {}, action) {
+  const today = new Date();
+  today.setHours(0);
+  today.setMinutes(0);
+  today.setSeconds(0);
+  today.setMilliseconds(0);
+
   switch (action.type) {
     case dealConstants.GETALL_REQUEST:
       return {...state, ...{
@@ -8,11 +14,6 @@ export function deals(state = {}, action) {
         adding: undefined
       }};
     case dealConstants.GETALL_SUCCESS:
-      const today = new Date();
-      today.setHours(0);
-      today.setMinutes(0);
-      today.setSeconds(0);
-      today.setMilliseconds(0);
       const result = action.deals && action.deals.result &&
         action.deals.result.filter(r => r.value.timestamp * 1000 > today.getTime());
 
@@ -21,6 +22,42 @@ export function deals(state = {}, action) {
         loading: false
       }};
     case dealConstants.GETALL_FAILURE:
+      return {...state, ...{
+        error: action.error,
+        loading: false
+      }};
+    case dealConstants.GETBYPERIOD_REQUEST:
+      return {...state, ...{
+          loading: true,
+          adding: undefined
+        }};
+    case dealConstants.GETBYPERIOD_SUCCESS:
+      const resultGetByPeriod = action.deals && action.deals.result &&
+        action.deals.result.filter(r => r.value.timestamp * 1000 > today.getTime());
+
+      return {...state, ...{
+        items: resultGetByPeriod,
+        loading: false
+      }};
+    case dealConstants.GETBYPERIOD_FAILURE:
+      return {...state, ...{
+        error: action.error,
+        loading: false
+      }};
+    case dealConstants.GETFORCREATORBYPERIOD_REQUEST:
+      return {...state, ...{
+          loading: true,
+          adding: undefined
+        }};
+    case dealConstants.GETFORCREATORBYPERIOD_SUCCESS:
+      const resultGetForCreatorByPeriod = action.deals && action.deals.result &&
+        action.deals.result.filter(r => r.value.timestamp * 1000 > today.getTime());
+
+      return {...state, ...{
+        items: resultGetForCreatorByPeriod,
+        loading: false
+      }};
+    case dealConstants.GETFORCREATORBYPERIOD_FAILURE:
       return {...state, ...{
         error: action.error,
         loading: false

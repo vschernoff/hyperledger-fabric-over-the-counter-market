@@ -11,7 +11,8 @@ import {commonConstants} from '../_constants';
 type Props = {
   dispatch: Function,
   deals: {items: Deal[]},
-  columns: any[]
+  columns: any[],
+  refreshData: Function
 };
 type State = {
 };
@@ -39,17 +40,19 @@ const DEFAULT_COLUMNS = [{
 }];
 
 class DealsTable extends React.Component<Props, State> {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
 
-    (this:any).refreshData = this.refreshData.bind(this);
+    const {refreshData} = this.props;
+
+    (this:any).refreshData = refreshData ? refreshData.bind(this) : this.refreshDataDefault;
   }
 
   componentDidMount() {
     this.refreshData();
   }
 
-  refreshData() {
+  refreshDataDefault() {
     this.props.dispatch(dealActions.getAll());
   }
 
@@ -61,20 +64,20 @@ class DealsTable extends React.Component<Props, State> {
     }
 
     return (
-        <ReactTable
-          columns={columns || DEFAULT_COLUMNS}
-          data={deals.items || []}
-          className="-striped -highlight"
-          defaultPageSize={10}
-          minWidth={60}
-          filterable={true}
-          defaultSorted={[
-            {
-              id: "value.timestamp",
-              desc: true
-            }
-          ]}
-        />
+      <ReactTable
+        columns={columns || DEFAULT_COLUMNS}
+        data={deals.items || []}
+        className="-striped -highlight"
+        defaultPageSize={10}
+        minWidth={60}
+        filterable={true}
+        defaultSorted={[
+          {
+            id: "value.timestamp",
+            desc: true
+          }
+        ]}
+      />
     );
   }
 }
