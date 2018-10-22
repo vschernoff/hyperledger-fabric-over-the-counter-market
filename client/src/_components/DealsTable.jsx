@@ -40,6 +40,8 @@ const DEFAULT_COLUMNS = [{
 }];
 
 class DealsTable extends React.Component<Props, State> {
+  refreshData: Function;
+
   constructor(props) {
     super(props);
 
