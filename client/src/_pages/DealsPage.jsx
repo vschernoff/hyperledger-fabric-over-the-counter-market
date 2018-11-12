@@ -6,6 +6,7 @@ import {dealActions} from '../_actions';
 import {formatter} from '../_helpers';
 import {commonConstants} from '../_constants';
 import moment from 'moment';
+import {socketService} from '../_services';
 
 const parametersMap = {
   from: "fromDate",
@@ -69,6 +70,12 @@ const itemsFilterContainer = [
 
 class DealsPage extends React.Component {
 
+  constructor(props) {
+    super(props);
+
+    socketService.subscribe(() => this.refreshData());
+  }
+
   handleSubmit(params, event = null) {
     event || event.preventDefault();
 
@@ -83,7 +90,7 @@ class DealsPage extends React.Component {
   refreshData() {
     if (this.filterParams && this.filterParams[parametersMap.creator] !== 'undefined') {
       const fnName = this.filterParams[parametersMap.creator] ? 'getForCreatorByPeriod' : 'getByPeriod';
-      this.props.dispatch(dealActions[fnName]([this.filterParams[parametersMap.from].format('X'), this.filterParams[parametersMap.to].format('X')]));
+      this.props.dispatch(dealActions[fnName]([this.filterParams[parametersMap.from], this.filterParams[parametersMap.to]]));
     } else {
       this.props.dispatch(dealActions.getAll());
     }
@@ -101,7 +108,7 @@ class DealsPage extends React.Component {
         </div>
         <div className="row">
           <div className="col">
-            <DealsTable columns={columns} refreshData={this.refreshData.bind(this)} />
+            <DealsTable columns={columns} refreshData={this.refreshData.bind(this)}/>
           </div>
         </div>
         <div className="row">

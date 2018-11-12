@@ -1,12 +1,10 @@
 import React from 'react';
 import ReactTable from 'react-table';
 import {connect} from 'react-redux';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSync } from '@fortawesome/free-solid-svg-icons';
-
 import {dealActions} from '../_actions';
 import {formatter} from '../_helpers';
 import {commonConstants} from '../_constants';
+import {socketService} from '../_services';
 
 
 class SummaryPage extends React.Component {
@@ -14,6 +12,7 @@ class SummaryPage extends React.Component {
     super();
 
     this.refreshData = this.refreshData.bind(this);
+    socketService.subscribe(() => this.refreshData());
   }
 
   componentDidMount() {
@@ -109,11 +108,6 @@ class SummaryPage extends React.Component {
 
     return (
       <div>
-        <div className="row">
-          <div className="col col-form-label">
-            <button className="btn btn-primary" onClick={this.refreshData}>Refresh <FontAwesomeIcon icon={faSync}/></button>
-          </div>
-        </div>
         <div className="row">
           <div className="col">
             <h3>Aftermarket clearing</h3>

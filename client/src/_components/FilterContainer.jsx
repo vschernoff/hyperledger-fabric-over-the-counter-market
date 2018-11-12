@@ -69,7 +69,7 @@ class FilterContainer extends React.Component {
     this.handleSubmit = handleSubmit.bind(this);
     this.setParams = setParams.bind(this);
 
-    this.setParams(filterStates);
+    this.setParams(this.prepareFilterStates(filterStates));
   }
 
   handleChange(state, value) {
@@ -80,16 +80,24 @@ class FilterContainer extends React.Component {
         ...prevState.filterStates,
         [state]: value
       }
-    }))
+    }));
+    let filterStates = this.state.filterStates;
+    filterStates = {...filterStates, [state]: value};
+    this.setParams(this.prepareFilterStates(filterStates));
   }
 
-  prepareSubmit(event) {
+  prepareFilterStates(filterStates) {
     let parameters = {};
     this.items.map(
       element => {
-        return parameters[element.state.name] = moment.isMoment(this.state.filterStates[element.state.name]) ? this.state.filterStates[element.state.name].format('X') : this.state.filterStates[element.state.name] === null ? element.defaultValue : this.state.filterStates[element.state.name];
+        return parameters[element.state.name] = moment.isMoment(filterStates[element.state.name]) ? filterStates[element.state.name].format('X') : filterStates[element.state.name] === null ? element.defaultValue : filterStates[element.state.name];
       }
     );
+    return parameters;
+  }
+
+  prepareSubmit(event) {
+    let parameters = this.prepareFilterStates(this.state.filterStates)
     this.handleSubmit(parameters, event);
   }
 

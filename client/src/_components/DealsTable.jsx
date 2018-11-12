@@ -10,12 +10,11 @@ import {commonConstants} from '../_constants';
 
 type Props = {
   dispatch: Function,
-  deals: {items: Deal[]},
+  deals: { items: Deal[] },
   columns: any[],
   refreshData: Function
 };
-type State = {
-};
+type State = {};
 
 const DEFAULT_COLUMNS = [{
   Header: 'Lender',
@@ -47,7 +46,7 @@ class DealsTable extends React.Component<Props, State> {
 
     const {refreshData} = this.props;
 
-    (this:any).refreshData = refreshData ? refreshData.bind(this) : this.refreshDataDefault;
+    (this: any).refreshData = refreshData ? refreshData.bind(this) : this.refreshDataDefault;
   }
 
   componentDidMount() {

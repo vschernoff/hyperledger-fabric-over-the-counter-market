@@ -5,15 +5,14 @@ import {AddOrder, Chart, OrdersTable, DealsTable, Modal} from '../_components';
 import {orderActions, dealActions, modalActions} from '../_actions';
 import {modalIds} from '../_constants';
 import {NavLink} from 'react-router-dom';
+import {socketService} from '../_services';
 
 class HomePage extends React.Component {
 
-  componentDidMount() {
-    this.timerId = setInterval(this.refreshData.bind(this, true), 50000);
-  }
+  constructor(props) {
+    super(props);
 
-  componentWillUnmount() {
-    clearInterval(this.timerId);
+    socketService.subscribe(() => this.refreshData());
   }
 
   componentDidUpdate(prevProps) {
