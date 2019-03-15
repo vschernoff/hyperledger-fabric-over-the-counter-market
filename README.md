@@ -1,4 +1,4 @@
-# Starter Application for Hyperledger Fabric 1.2
+# Starter Application for Hyperledger Fabric 1.4
 
 Create a network to jump start development of your decentralized application.
 
@@ -226,6 +226,10 @@ Finally:
 ```bash
 ./network.sh -m devdown
 ```
+
+## Testing
+
+[Caliper](https://github.com/hyperledger/caliper) is using as testing framework. Please find how to setup test [here](test/readme.md).
 
 ## Acknowledgements
 

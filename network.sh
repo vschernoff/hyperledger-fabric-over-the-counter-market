@@ -17,21 +17,25 @@ artifactsTemplatesFolder="artifact-templates"
 : ${ORG1:="a"}
 : ${ORG2:="b"}
 : ${ORG3:="c"}
+: ${PEER0:="peer0"}
+: ${PEER1:="peer1"}
 : ${MAIN_ORG:=${ORG1}}
 : ${IP1:="127.0.0.1"}
 : ${IP2:="127.0.0.1"}
 : ${IP3:="127.0.0.1"}
 
+: ${FABRIC_VERSION:="1.4.0"}
+: ${THIRDPARTY_VERSION:="0.4.14"}
+: ${FABRIC_REST_VERSION:="0.13.0"}
+
+
 echo "Use Fabric-Starter home: $FABRIC_STARTER_HOME"
 echo "Use docker compose template folder: $TEMPLATES_DOCKER_COMPOSE_FOLDER"
 echo "Use target artifact folder: $GENERATED_ARTIFACTS_FOLDER"
 echo "Use target docker-compose folder: $GENERATED_DOCKER_COMPOSE_FOLDER"
-
-[[ -d $GENERATED_ARTIFACTS_FOLDER ]] || mkdir $GENERATED_ARTIFACTS_FOLDER
-[[ -d $GENERATED_DOCKER_COMPOSE_FOLDER ]] || mkdir $GENERATED_DOCKER_COMPOSE_FOLDER
-cp -f "$TEMPLATES_DOCKER_COMPOSE_FOLDER/base.yaml" "$GENERATED_DOCKER_COMPOSE_FOLDER"
-cp -f "$TEMPLATES_DOCKER_COMPOSE_FOLDER/base-intercept.yaml" "$GENERATED_DOCKER_COMPOSE_FOLDER"
-if [[ -d ./$composeTemplatesFolder ]]; then cp -f "./$composeTemplatesFolder/base-intercept.yaml" "$GENERATED_DOCKER_COMPOSE_FOLDER"; fi
+echo "Use Fabric Version: $FABRIC_VERSION"
+echo "Use Fabric REST Version: $FABRIC_REST_VERSION"
+echo "Use 3rdParty Version: $THIRDPARTY_VERSION"
 
 
 WGET_OPTS="--verbose -N"
@@ -46,7 +50,10 @@ CHAINCODE_BILATERAL_NAME=relationship
 CHAINCODE_COMMON_INIT='{"Args":["init"]}'
 CHAINCODE_BILATERAL_INIT='{"Args":["init"]}'
 COLLECTION_CONFIG='$GOPATH/src/reference/collections_config.json'
-# TODO: evaluate dynamically
+#Set default State Database
+LITERAL_COUCHDB="couchdb"
+LITERAL_LEVELDB="leveldb"
+STATE_DATABASE="${LITERAL_COUCHDB}"
 
 DEFAULT_ORDERER_PORT=7050
 DEFAULT_WWW_PORT=8080
@@ -56,6 +63,7 @@ DEFAULT_PEER0_PORT=7051
 DEFAULT_PEER0_EVENT_PORT=7053
 DEFAULT_PEER1_PORT=7056
 DEFAULT_PEER1_EVENT_PORT=7058
+DEFAULT_KAFKA_PORT=9092
 
 DEFAULT_PEER_EXTRA_HOSTS="extra_hosts:[newline]      - orderer.$DOMAIN:$IP_ORDERER"
 DEFAULT_CLI_EXTRA_HOSTS="extra_hosts:[newline]      - orderer.$DOMAIN:$IP_ORDERER[newline]      - www.$DOMAIN:$IP_ORDERER[newline]      - www.$ORG1.$DOMAIN:$IP1[newline]      - www.$ORG2.$DOMAIN:$IP2[newline]      - www.$ORG3.$DOMAIN:$IP3"
@@ -66,42 +74,17 @@ DEFAULT_API_EXTRA_HOSTS3="extra_hosts:[newline]      - orderer.$DOMAIN:$IP_ORDER
 
 GID=$(id -g)
 
-function array_orgs_to_json() {
-      local arr=("$@");
-      local len=${#arr[@]}
+# Handle MacOS sed
+ARCH=$(uname -s | grep Darwin)
+SED_OPTS="-i"
+if [ "$ARCH" == "Darwin" ]; then
+    SED_OPTS="-it"
+fi
 
-      if [[ ${len} -eq 0 ]]; then
-        >&2 echo "Error: Length of input array needs to be at least 2.";
-         return 1;
-      fi
-
-      if [[ $((len%2)) -eq 1 ]]; then
-         >&2 echo "Error: Length of input array needs to be even (key/value pairs).";
-         return 1;
-      fi
-
-      local foo=0;
-      for i in "${arr[@]}"; do
-          local char="},{"
-          if [ $((++foo%2)) -eq 0 ]; then
-               char=":";
-          fi
-
-          local first="${i:0:1}";  # read first charc
-
-          local app="\\\"$i\\\""
-
-          if [[ "$first" == "^" ]]; then
-            app="${i:1}"  # remove first char
-          fi
-
-          JSON_ORG="$JSON_ORG$char$app";
-
-      done
-
-      JSON_ORG="\"[{${JSON_ORG:3}}]\"";  # remove the first three chars
+function setDockerVersions() {
+    echo "set Docker image versions for $1"
+    sed $SED_OPTS -e "s/FABRIC_VERSION/$FABRIC_VERSION/g" -e "s/THIRDPARTY_VERSION/$THIRDPARTY_VERSION/g" -e "s/FABRIC_REST_VERSION/$FABRIC_REST_VERSION/g" $1
 }
-
 
 function removeUnwantedContainers() {
   docker ps -a -q -f "name=dev-*"|xargs docker rm -f
@@ -118,7 +101,16 @@ function removeUnwantedImages() {
   fi
 }
 
+function generateArtifacts() {
+  [[ -d $GENERATED_ARTIFACTS_FOLDER ]] || mkdir $GENERATED_ARTIFACTS_FOLDER
+  [[ -d $GENERATED_DOCKER_COMPOSE_FOLDER ]] || mkdir $GENERATED_DOCKER_COMPOSE_FOLDER
+  cp -f "$TEMPLATES_DOCKER_COMPOSE_FOLDER/base.yaml" "$GENERATED_DOCKER_COMPOSE_FOLDER"
+  cp -f "$TEMPLATES_DOCKER_COMPOSE_FOLDER/base-intercept.yaml" "$GENERATED_DOCKER_COMPOSE_FOLDER"
+  if [[ -d ./$composeTemplatesFolder ]]; then cp -f "./$composeTemplatesFolder/base-intercept.yaml" "$GENERATED_DOCKER_COMPOSE_FOLDER"; fi
+}
+
 function removeArtifacts() {
+  generateArtifacts
   echo "Removing generated and downloaded artifacts from: $GENERATED_DOCKER_COMPOSE_FOLDER, $GENERATED_ARTIFACTS_FOLDER"
   rm $GENERATED_DOCKER_COMPOSE_FOLDER/docker-compose-*.yaml
   rm -rf $GENERATED_ARTIFACTS_FOLDER/crypto-config
@@ -199,6 +191,8 @@ function generateOrdererDockerCompose() {
     cli_extra_hosts=${DEFAULT_CLI_EXTRA_HOSTS}
 
     sed -e "s/DOMAIN/$DOMAIN/g" -e "s/MAIN_ORG/$mainOrg/g" -e "s/CLI_EXTRA_HOSTS/$cli_extra_hosts/g" -e "s/ORDERER_PORT/$DEFAULT_ORDERER_PORT/g" -e "s/WWW_PORT/$DEFAULT_WWW_PORT/g" -e "s/ORG1/$ORG1/g" -e "s/ORG2/$ORG2/g" -e "s/ORG3/$ORG3/g" ${compose_template} | awk '{gsub(/\[newline\]/, "\n")}1' > ${f}
+
+    setDockerVersions $f
 }
 
 function generateNetworkConfig() {
@@ -276,10 +270,15 @@ function generateOrdererArtifacts() {
         generateNetworkConfig ${ORG1} ${ORG2} ${ORG3}
         # replace in configtx
         sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG1/$ORG1/g" -e "s/ORG2/$ORG2/g" -e "s/ORG3/$ORG3/g" $TEMPLATES_ARTIFACTS_FOLDER/configtxtemplate.yaml > $GENERATED_ARTIFACTS_FOLDER/configtx.yaml
-#        createChannels=("common" "$ORG1-$ORG2" "$ORG1-$ORG3" "$ORG2-$ORG3")
-        createChannels=("common")
+        createChannels=("common" "$ORG1-$ORG2" "$ORG1-$ORG3" "$ORG2-$ORG3")
     fi
 
+
+    for channel_name in ${createChannels[@]}
+    do
+        echo "Generating channel config transaction for $channel_name"
+        docker-compose --file ${f} run --rm -e FABRIC_CFG_PATH=/etc/hyperledger/artifacts "cli.$DOMAIN" configtxgen -profile "$channel_name" -outputCreateChannelTx "./channel/$channel_name.tx" -channelID "$channel_name"
+    done
 
     # replace in cryptogen
     sed -e "s/DOMAIN/$DOMAIN/g" $TEMPLATES_ARTIFACTS_FOLDER/cryptogentemplate-orderer.yaml > "$GENERATED_ARTIFACTS_FOLDER/cryptogen-$DOMAIN.yaml"
@@ -346,7 +345,10 @@ function generatePeerArtifacts() {
     peer0_event_port=$6
     peer1_port=$7
     peer1_event_port=$8
+
+    if [ "${STATE_DATABASE}" == "couchdb" ]; then
     couchdb_port=$9
+    fi
 
     : ${api_port:=${DEFAULT_API_PORT}}
     : ${www_port:=${DEFAULT_WWW_PORT}}
@@ -355,23 +357,33 @@ function generatePeerArtifacts() {
     : ${peer0_event_port:=${DEFAULT_PEER0_EVENT_PORT}}
     : ${peer1_port:=${DEFAULT_PEER1_PORT}}
     : ${peer1_event_port:=${DEFAULT_PEER1_EVENT_PORT}}
+    if [ "${STATE_DATABASE}" == "couchdb" ]; then
     : ${couchdb_port:=${DEFAULT_COUCHDB_PORT}}
-
     echo "Creating peer yaml files with $DOMAIN, $org, $api_port, $www_port, $ca_port, $peer0_port, $peer0_event_port, $peer1_port, $peer1_event_port, $couchdb_port"
-
+    compose_template=$TEMPLATES_DOCKER_COMPOSE_FOLDER/docker-composetemplate-peer-couchdb.yaml
+    else
+    echo "Creating peer yaml files with $DOMAIN, $org, $api_port, $www_port, $ca_port, $peer0_port, $peer0_event_port, $peer1_port, $peer1_event_port"
     compose_template=$TEMPLATES_DOCKER_COMPOSE_FOLDER/docker-composetemplate-peer.yaml
+    fi
+
     f="$GENERATED_DOCKER_COMPOSE_FOLDER/docker-compose-$org.yaml"
 
     # cryptogen yaml
     sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG/$org/g" $TEMPLATES_ARTIFACTS_FOLDER/cryptogentemplate-peer.yaml > $GENERATED_ARTIFACTS_FOLDER/"cryptogen-$org.yaml"
 
     # docker-compose yaml
+
+    if [ "${STATE_DATABASE}" == "couchdb" ]; then
     sed -e "s/PEER_EXTRA_HOSTS/$peer_extra_hosts/g" -e "s/CLI_EXTRA_HOSTS/$cli_extra_hosts/g" -e "s/API_EXTRA_HOSTS/$api_extra_hosts/g" -e "s/DOMAIN/$DOMAIN/g" -e "s/\([^ ]\)ORG/\1$org/g" -e "s/API_PORT/$api_port/g" -e "s/WWW_PORT/$www_port/g" -e "s/CA_PORT/$ca_port/g" -e "s/PEER0_PORT/$peer0_port/g" -e "s/PEER0_EVENT_PORT/$peer0_event_port/g" -e "s/PEER1_PORT/$peer1_port/g" -e "s/PEER1_EVENT_PORT/$peer1_event_port/g" -e "s/COUCHDB_PORT/$couchdb_port/g" ${compose_template} | awk '{gsub(/\[newline\]/, "\n")}1' > ${f}
+    else
+    sed -e "s/PEER_EXTRA_HOSTS/$peer_extra_hosts/g" -e "s/CLI_EXTRA_HOSTS/$cli_extra_hosts/g" -e "s/API_EXTRA_HOSTS/$api_extra_hosts/g" -e "s/DOMAIN/$DOMAIN/g" -e "s/\([^ ]\)ORG/\1$org/g" -e "s/API_PORT/$api_port/g" -e "s/WWW_PORT/$www_port/g" -e "s/CA_PORT/$ca_port/g" -e "s/PEER0_PORT/$peer0_port/g" -e "s/PEER0_EVENT_PORT/$peer0_event_port/g" -e "s/PEER1_PORT/$peer1_port/g" -e "s/PEER1_EVENT_PORT/$peer1_event_port/g" ${compose_template} | awk '{gsub(/\[newline\]/, "\n")}1' > ${f}
+    fi
 
     # fabric-ca-server-config yaml
     sed -e "s/ORG/$org/g" $TEMPLATES_ARTIFACTS_FOLDER/fabric-ca-server-configtemplate.yaml > $GENERATED_ARTIFACTS_FOLDER/"fabric-ca-server-config-$org.yaml"
 
     addHostFiles "${org}"
+    setDockerVersions $f
 
     echo "Generating crypto material with cryptogen"
 
@@ -384,7 +396,7 @@ function generatePeerArtifacts() {
     echo "Adding generated CA private keys filenames to $f"
     ca_private_key=$(basename `ls -t $GENERATED_ARTIFACTS_FOLDER/crypto-config/peerOrganizations/"$org.$DOMAIN"/ca/*_sk`)
     [[ -z  ${ca_private_key}  ]] && echo "empty CA private key" && exit 1
-    sed -i -e "s/CA_PRIVATE_KEY/${ca_private_key}/g" ${f}
+    sed $SED_OPTS -e "s/CA_PRIVATE_KEY/${ca_private_key}/g" ${f}
 
     # replace in configtx
     sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG/$org/g" $TEMPLATES_ARTIFACTS_FOLDER/configtx-orgtemplate.yaml > $GENERATED_ARTIFACTS_FOLDER/configtx.yaml
@@ -514,27 +526,30 @@ function joinChannel() {
 }
 
 function instantiateChaincode () {
+    sleep 3
     org=$1
     channel_names=($2)
     n=$3
     i=$4
     cc=$5
-    if [ -n "$cc" ]; then
-    cc="--collections-config $cc";
-    else
+    if [ -z "$cc" ]; then
     cc="";
+    else
+    cc="--collections-config $cc";
     fi
 
     f="$GENERATED_DOCKER_COMPOSE_FOLDER/docker-compose-${org}.yaml"
 
-    for channel_name in ${channel_names[@]}; do
-        info "instantiating chaincode $n on $channel_name by $org using $f with $i"
+    for peer in ${PEER0}; do
+        for channel_name in ${channel_names[@]}; do
+            info "instantiating chaincode $n on $channel_name by $org using $f with $i"
 
-        c="CORE_PEER_ADDRESS=peer0.$org.$DOMAIN:7051 peer chaincode instantiate -n $n -v ${CHAINCODE_VERSION} -c '$i' -o orderer.$DOMAIN:7050 -C $channel_name  $cc --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
-        d="cli.$org.$DOMAIN"
+            c="CORE_PEER_ADDRESS=$peer.$org.$DOMAIN:7051 peer chaincode instantiate -n $n -v ${CHAINCODE_VERSION} -c '$i' -o orderer.$DOMAIN:7050 -C $channel_name $cc --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
+            d="cli.$org.$DOMAIN"
 
-        echo "instantiating with $d by $c"
-        docker-compose --file ${f} run --rm ${d} bash -c "${c}"
+            echo "instantiating with $d by $c"
+            docker-compose --file ${f} run --rm ${d} bash -c "${c}"
+        done
     done
 }
 
@@ -842,7 +857,11 @@ function addOrg() {
   rm -f $GENERATED_ARTIFACTS_FOLDER/newOrgMSP.json $GENERATED_ARTIFACTS_FOLDER/config.* $GENERATED_ARTIFACTS_FOLDER/update.* $GENERATED_ARTIFACTS_FOLDER/updated_config.* $GENERATED_ARTIFACTS_FOLDER/update_in_envelope.*
 
   # ex. generatePeerArtifacts foo 4005 8086 1254 1251 1253 1256 1258
-  generatePeerArtifacts ${org} ${API_PORT} ${WWW_PORT} ${CA_PORT} ${PEER0_PORT} ${PEER0_EVENT_PORT} ${PEER1_PORT} ${PEER1_EVENT_PORT} ${COUCHDB_PORT}
+  if [ "${STATE_DATABASE}" == "couchdb" ]; then
+    generatePeerArtifacts ${org} ${API_PORT} ${WWW_PORT} ${CA_PORT} ${PEER0_PORT} ${PEER0_EVENT_PORT} ${PEER1_PORT} ${PEER1_EVENT_PORT} ${COUCHDB_PORT}
+  else
+    generatePeerArtifacts ${org} ${API_PORT} ${WWW_PORT} ${CA_PORT} ${PEER0_PORT} ${PEER0_EVENT_PORT} ${PEER1_PORT} ${PEER1_EVENT_PORT}
+  fi
 
   dockerComposeUp ${org}
 
@@ -1230,6 +1249,10 @@ function printHelp () {
   echo "      - 'generate' - generate required certificates and genesis block"
   echo "      - 'logs' - print and follow all docker instances log files"
   echo
+  echo "    -s <state> - one of 'couchdb' or 'leveldb'"
+  echo "      - 'couchdb' - set CouchDB as State Database"
+  echo "      - 'leveldb' - set LevelDB as State Database"
+
   echo "Typically, one would first generate the required certificates and "
   echo "genesis block, then bring up the network. e.g.:"
   echo
@@ -1240,13 +1263,15 @@ function printHelp () {
 }
 
 # Parse commandline args
-while getopts "h?m:o:a:w:c:0:1:2:3:k:v:i:n:M:I:R:P:" opt; do
+while getopts "h?m:o:a:w:c:0:1:2:3:k:v:i:n:M:I:R:P:s:" opt; do
   case "$opt" in
     h|\?)
       printHelp
       exit 0
     ;;
     m)  MODE=$OPTARG
+    ;;
+    s)  STATE_DATABASE=$OPTARG
     ;;
     v)  CHAINCODE_VERSION=$OPTARG
     ;;
@@ -1286,20 +1311,6 @@ done
 checkDocker
 
 if [ "${MODE}" == "up" -a "${ORG}" == "" ]; then
-
-  #Building array from Organizations
-  JSON_ORG="";
-  ARRAY_ORG=()
-  for org in ${ORG3} ${ORG1} ${ORG2}
-  do
-    ARRAY_ORG+=("name" ${org})
-  done
-
-  #Building $JSON_ORG
-  array_orgs_to_json "${ARRAY_ORG[@]}"
-
-  CHAINCODE_COMMON_INIT='{"Args":["init",'"${JSON_ORG}"']}'
-
   for org in ${DOMAIN} ${ORG1} ${ORG2} ${ORG3}
   do
     dockerComposeUp ${org}
@@ -1309,21 +1320,20 @@ if [ "${MODE}" == "up" -a "${ORG}" == "" ]; then
   for org in ${ORG1} ${ORG2} ${ORG3}
   do
     installAll ${org}
-    createJoinInstantiateWarmUp ${org} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT} ${COLLECTION_CONFIG}
+#    createJoinInstantiateWarmUp ${org} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT} ${COLLECTION_CONFIG}
   done
 
-#  createJoinInstantiateWarmUp ${ORG1} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT} ${COLLECTION_CONFIG}
-  #createJoinInstantiateWarmUp ${ORG1} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT}
-#  createJoinInstantiateWarmUp ${ORG1} "${ORG1}-${ORG2}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
-#  createJoinInstantiateWarmUp ${ORG1} "${ORG1}-${ORG3}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
+  createJoinInstantiateWarmUp ${ORG1} common ${CHAINCODE_COMMON_NAME} ${CHAINCODE_COMMON_INIT} ${COLLECTION_CONFIG}
+  #createJoinInstantiateWarmUp ${ORG1} "${ORG1}-${ORG2}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
+  #createJoinInstantiateWarmUp ${ORG1} "${ORG1}-${ORG3}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
 
   joinWarmUp ${ORG2} common ${CHAINCODE_COMMON_NAME}
-#  joinWarmUp ${ORG2} "${ORG1}-${ORG2}" ${CHAINCODE_BILATERAL_NAME}
-#  createJoinInstantiateWarmUp ${ORG2} "${ORG2}-${ORG3}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
+  #joinWarmUp ${ORG2} "${ORG1}-${ORG2}" ${CHAINCODE_BILATERAL_NAME}
+  #createJoinInstantiateWarmUp ${ORG2} "${ORG2}-${ORG3}" ${CHAINCODE_BILATERAL_NAME} ${CHAINCODE_BILATERAL_INIT}
 
   joinWarmUp ${ORG3} common ${CHAINCODE_COMMON_NAME}
-#  joinWarmUp ${ORG3} "${ORG1}-${ORG3}" ${CHAINCODE_BILATERAL_NAME}
-#  joinWarmUp ${ORG3} "${ORG2}-${ORG3}" ${CHAINCODE_BILATERAL_NAME}
+  #joinWarmUp ${ORG3} "${ORG1}-${ORG3}" ${CHAINCODE_BILATERAL_NAME}
+  #joinWarmUp ${ORG3} "${ORG2}-${ORG3}" ${CHAINCODE_BILATERAL_NAME}
 
 elif [ "${MODE}" == "down" ]; then
   for org in ${DOMAIN} ${ORG1} ${ORG2} ${ORG3}
@@ -1338,6 +1348,19 @@ elif [ "${MODE}" == "clean" ]; then
 elif [ "${MODE}" == "generate" ]; then
   clean
   removeArtifacts
+
+  [[ -d $GENERATED_ARTIFACTS_FOLDER ]] || mkdir $GENERATED_ARTIFACTS_FOLDER
+  [[ -d $GENERATED_DOCKER_COMPOSE_FOLDER ]] || mkdir $GENERATED_DOCKER_COMPOSE_FOLDER
+  cp -f "$TEMPLATES_DOCKER_COMPOSE_FOLDER/base.yaml" "$GENERATED_DOCKER_COMPOSE_FOLDER"
+  cp -f "$TEMPLATES_DOCKER_COMPOSE_FOLDER/base-intercept.yaml" "$GENERATED_DOCKER_COMPOSE_FOLDER"
+  if [[ -d ./$composeTemplatesFolder ]]; then cp -f "./$composeTemplatesFolder/base-intercept.yaml" "$GENERATED_DOCKER_COMPOSE_FOLDER"; fi
+
+  file_base="$GENERATED_DOCKER_COMPOSE_FOLDER/base.yaml"
+  file_base_intercept="$GENERATED_DOCKER_COMPOSE_FOLDER/base-intercept.yaml"
+
+  setDockerVersions $file_base
+  setDockerVersions $file_base_intercept
+
   generatePeerArtifacts ${ORG1} 4000 8081 7054 7051 7053 7056 7058 5984
   generatePeerArtifacts ${ORG2} 4001 8082 8054 8051 8053 8056 8058 6984
   generatePeerArtifacts ${ORG3} 4002 8083 9054 9051 9053 9056 9058 7984
@@ -1353,7 +1376,13 @@ elif [ "${MODE}" == "generate-orderer" ]; then  # params: -M ORG (optional)
 elif [ "${MODE}" == "generate-peer" ]; then # params: -o ORG -R true(optional- REMOTE_ORG)
   clean
   removeArtifacts
+
+  if [ "${STATE_DATABASE}" == "couchdb" ]; then
   generatePeerArtifacts ${ORG} ${API_PORT} ${WWW_PORT} ${CA_PORT} ${PEER0_PORT} ${PEER0_EVENT_PORT} ${PEER1_PORT} ${PEER1_EVENT_PORT} ${COUCHDB_PORT}
+  else
+    generatePeerArtifacts ${ORG} ${API_PORT} ${WWW_PORT} ${CA_PORT} ${PEER0_PORT} ${PEER0_EVENT_PORT} ${PEER1_PORT} ${PEER1_EVENT_PORT}
+  fi
+
   servePeerArtifacts ${ORG}
   #if [ -n "$REMOTE_ORG" ]; then
     addOrgToCliHosts ${ORG} "orderer" ${IP_ORDERER}
@@ -1538,3 +1567,8 @@ fi
 
 endtime=$(date +%s)
 info "Finished in $(($endtime - $starttime)) seconds"
+
+# Delete yamlt files in MacOS
+if [ "$ARCH" == "Darwin" ]; then
+    find . -name "*.yamlt" -type f -delete
+fi
