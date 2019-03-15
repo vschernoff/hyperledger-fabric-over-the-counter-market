@@ -6,7 +6,7 @@
 version: '2'
 services:
   peer-base:
-    image: hyperledger/fabric-peer:1.2.0
+    image: hyperledger/fabric-peer:latest
     environment:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       # the following setting starts chaincode containers on the same
@@ -33,7 +33,7 @@ services:
       - /var/run/:/host/var/run/
 
   cli-base:
-    image: hyperledger/fabric-tools:1.2.0
+    image: hyperledger/fabric-tools:latest
     tty: true
     environment:
       - GOPATH=/opt/gopath
@@ -52,7 +52,7 @@ services:
     working_dir: /etc/hyperledger/artifacts
 
   api-base:
-    image: dockeraltoros/fabric-rest:0.12.2
+    image: dockeraltoros/fabric-rest:latest
     volumes:
      - ../artifacts:/usr/src/artifacts
      - ../middleware-auth:/usr/src/app/middleware-auth

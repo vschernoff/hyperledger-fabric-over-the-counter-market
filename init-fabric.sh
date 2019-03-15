@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # adjust ---------------
-: ${FABRIC_VERSION:="1.2.0"}
+: ${FABRIC_VERSION:="latest"}
 #-----------------------
 FABRIC_PACK="amd64-${FABRIC_VERSION}"
 
