@@ -74,6 +74,42 @@ DEFAULT_API_EXTRA_HOSTS3="extra_hosts:[newline]      - orderer.$DOMAIN:$IP_ORDER
 
 GID=$(id -g)
 
+function array_orgs_to_json() {
+      local arr=("$@");
+      local len=${#arr[@]}
+
+      if [[ ${len} -eq 0 ]]; then
+        >&2 echo "Error: Length of input array needs to be at least 2.";
+         return 1;
+      fi
+
+      if [[ $((len%2)) -eq 1 ]]; then
+         >&2 echo "Error: Length of input array needs to be even (key/value pairs).";
+         return 1;
+      fi
+
+      local foo=0;
+      for i in "${arr[@]}"; do
+          local char="},{"
+          if [ $((++foo%2)) -eq 0 ]; then
+               char=":";
+          fi
+
+          local first="${i:0:1}";  # read first charc
+
+          local app="\\\"$i\\\""
+
+          if [[ "$first" == "^" ]]; then
+            app="${i:1}"  # remove first char
+          fi
+
+          JSON_ORG="$JSON_ORG$char$app";
+
+      done
+
+      JSON_ORG="\"[{${JSON_ORG:3}}]\"";  # remove the first three chars
+}
+
 # Handle MacOS sed
 ARCH=$(uname -s | grep Darwin)
 SED_OPTS="-i"
@@ -270,7 +306,8 @@ function generateOrdererArtifacts() {
         generateNetworkConfig ${ORG1} ${ORG2} ${ORG3}
         # replace in configtx
         sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG1/$ORG1/g" -e "s/ORG2/$ORG2/g" -e "s/ORG3/$ORG3/g" $TEMPLATES_ARTIFACTS_FOLDER/configtxtemplate.yaml > $GENERATED_ARTIFACTS_FOLDER/configtx.yaml
-        createChannels=("common" "$ORG1-$ORG2" "$ORG1-$ORG3" "$ORG2-$ORG3")
+#        createChannels=("common" "$ORG1-$ORG2" "$ORG1-$ORG3" "$ORG2-$ORG3")
+        createChannels=("common")
     fi
 
 
@@ -540,16 +577,14 @@ function instantiateChaincode () {
 
     f="$GENERATED_DOCKER_COMPOSE_FOLDER/docker-compose-${org}.yaml"
 
-    for peer in ${PEER0}; do
-        for channel_name in ${channel_names[@]}; do
-            info "instantiating chaincode $n on $channel_name by $org using $f with $i"
+    for channel_name in ${channel_names[@]}; do
+        info "instantiating chaincode $n on $channel_name by $org using $f with $i"
 
-            c="CORE_PEER_ADDRESS=$peer.$org.$DOMAIN:7051 peer chaincode instantiate -n $n -v ${CHAINCODE_VERSION} -c '$i' -o orderer.$DOMAIN:7050 -C $channel_name $cc --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
-            d="cli.$org.$DOMAIN"
+        c="CORE_PEER_ADDRESS=peer0.$org.$DOMAIN:7051 peer chaincode instantiate -n $n -v ${CHAINCODE_VERSION} -c '$i' -o orderer.$DOMAIN:7050 -C $channel_name  $cc --tls --cafile /etc/hyperledger/crypto/orderer/tls/ca.crt"
+        d="cli.$org.$DOMAIN"
 
-            echo "instantiating with $d by $c"
-            docker-compose --file ${f} run --rm ${d} bash -c "${c}"
-        done
+        echo "instantiating with $d by $c"
+        docker-compose --file ${f} run --rm ${d} bash -c "${c}"
     done
 }
 
@@ -1311,6 +1346,20 @@ done
 checkDocker
 
 if [ "${MODE}" == "up" -a "${ORG}" == "" ]; then
+
+  #Building array from Organizations
+  JSON_ORG="";
+  ARRAY_ORG=()
+  for org in ${ORG3} ${ORG1} ${ORG2}
+  do
+    ARRAY_ORG+=("name" ${org})
+  done
+
+  #Building $JSON_ORG
+  array_orgs_to_json "${ARRAY_ORG[@]}"
+
+  CHAINCODE_COMMON_INIT='{"Args":["init",'"${JSON_ORG}"']}'
+
   for org in ${DOMAIN} ${ORG1} ${ORG2} ${ORG3}
   do
     dockerComposeUp ${org}
