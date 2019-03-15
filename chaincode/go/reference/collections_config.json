@@ -2,7 +2,7 @@
 
 	{
 		"name": "a-b-Deals",
-		"policy": "OR('aMSP.member', 'bMSP.member')",
+		"policy": "OR('aMSP.member','bMSP.member')",
 		"requiredPeerCount": 0,
 		"maxPeerCount": 3,
 		"blockToLive":0
