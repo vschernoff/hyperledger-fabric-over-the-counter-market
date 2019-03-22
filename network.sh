@@ -51,9 +51,8 @@ LITERAL_LEVELDB="leveldb"
 STATE_DATABASE="${LITERAL_COUCHDB}"
 
 DEFAULT_ORDERER_PORT=7050
-DEFAULT_WWW_PORT=8080
-DEFAULT_API_PORT=4000
-DEFAULT_PROXY_PORT=80
+DEFAULT_WWW_PORT=4000
+DEFAULT_API_PORT=8080
 DEFAULT_CA_PORT=7054
 DEFAULT_PEER0_PORT=7051
 DEFAULT_PEER0_EVENT_PORT=7053
@@ -304,32 +303,28 @@ function generatePeerArtifacts() {
       fi
     fi
 
-    api_port=$2
-    www_port=$3
-    ca_port=$4
-    peer0_port=$5
-    peer0_event_port=$6
-    peer1_port=$7
-    peer1_event_port=$8
-    proxy_port=$9
+    www_port=$2
+    ca_port=$3
+    peer0_port=$4
+    peer0_event_port=$5
+    peer1_port=$6
+    peer1_event_port=$7
 
     if [ "${STATE_DATABASE}" == "couchdb" ]; then
-    couchdb_port=${10}
+      couchdb_port=${8}
     fi
 
-    : ${api_port:=${DEFAULT_API_PORT}}
     : ${www_port:=${DEFAULT_WWW_PORT}}
-    : ${proxy_port:${DEFAULT_PROXY_PORT}}
     : ${ca_port:=${DEFAULT_CA_PORT}}
     : ${peer0_port:=${DEFAULT_PEER0_PORT}}
     : ${peer0_event_port:=${DEFAULT_PEER0_EVENT_PORT}}
     : ${peer1_port:=${DEFAULT_PEER1_PORT}}
     : ${peer1_event_port:=${DEFAULT_PEER1_EVENT_PORT}}
     if [ "${STATE_DATABASE}" == "couchdb" ]; then
-    echo "Creating peer yaml files with $DOMAIN, $org, $api_port, $www_port, $ca_port, $peer0_port, $peer0_event_port, $peer1_port, $peer1_event_port, $couchdb_port"
+    echo "Creating peer yaml files with $DOMAIN, $org, $www_port, $ca_port, $peer0_port, $peer0_event_port, $peer1_port, $peer1_event_port, $couchdb_port"
     compose_template=$TEMPLATES_DOCKER_COMPOSE_FOLDER/docker-composetemplate-peer-couchdb.yaml
     else
-    echo "Creating peer yaml files with $DOMAIN, $org, $api_port, $www_port, $ca_port, $peer0_port, $peer0_event_port, $peer1_port, $peer1_event_port"
+    echo "Creating peer yaml files with $DOMAIN, $org, $www_port, $ca_port, $peer0_port, $peer0_event_port, $peer1_port, $peer1_event_port"
     compose_template=$TEMPLATES_DOCKER_COMPOSE_FOLDER/docker-composetemplate-peer.yaml
     fi
 
@@ -339,14 +334,48 @@ function generatePeerArtifacts() {
     sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG/$org/g" $TEMPLATES_ARTIFACTS_FOLDER/cryptogentemplate-peer.yaml > $GENERATED_ARTIFACTS_FOLDER/"cryptogen-$org.yaml"
 
     # nginx proxy config
-    sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG/$org/g" -e "s/API_PORT/${DEFAULT_API_PORT}/g" $TEMPLATES_ARTIFACTS_FOLDER/nginx.conf > $GENERATED_ARTIFACTS_FOLDER/"nginx-$org.conf"
+    sed -e "s/DOMAIN/$DOMAIN/g" \
+        -e "s/ORG/$org/g" \
+        -e "s/API_PORT/${DEFAULT_API_PORT}/g" \
+        $TEMPLATES_ARTIFACTS_FOLDER/nginx.conf > $GENERATED_ARTIFACTS_FOLDER/"nginx-$org.conf"
+
+    # API configs
+    mkdir ${GENERATED_ARTIFACTS_FOLDER}/api-configs-${org}
+    sed -e "s/DOMAIN/$DOMAIN/g" \
+        -e "s/ORG/$org/g" \
+        $TEMPLATES_ARTIFACTS_FOLDER/api-configs/api.yaml > ${GENERATED_ARTIFACTS_FOLDER}/api-configs-${org}/api.yaml
+    sed -e "s/DOMAIN/$DOMAIN/g" \
+        -e "s/ORG/$org/g" \
+        $TEMPLATES_ARTIFACTS_FOLDER/api-configs/network.yaml > ${GENERATED_ARTIFACTS_FOLDER}/api-configs-${org}/network.yaml
 
     # docker-compose yaml
-
     if [ "${STATE_DATABASE}" == "couchdb" ]; then
-    sed -e "s/PEER_EXTRA_HOSTS/$peer_extra_hosts/g" -e "s/CLI_EXTRA_HOSTS/$cli_extra_hosts/g" -e "s/API_EXTRA_HOSTS/$api_extra_hosts/g" -e "s/DOMAIN/$DOMAIN/g" -e "s/\([^ ]\)ORG/\1$org/g" -e "s/API_PORT/$api_port/g" -e "s/PROXY_PORT/$proxy_port/g" -e "s/WWW_PORT/$www_port/g" -e "s/CA_PORT/$ca_port/g" -e "s/PEER0_PORT/$peer0_port/g" -e "s/PEER0_EVENT_PORT/$peer0_event_port/g" -e "s/PEER1_PORT/$peer1_port/g" -e "s/PEER1_EVENT_PORT/$peer1_event_port/g" -e "s/COUCHDB_PORT/$couchdb_port/g" ${compose_template} | awk '{gsub(/\[newline\]/, "\n")}1' > ${f}
+      sed -e "s/PEER_EXTRA_HOSTS/$peer_extra_hosts/g" \
+          -e "s/CLI_EXTRA_HOSTS/$cli_extra_hosts/g" \
+          -e "s/API_EXTRA_HOSTS/$api_extra_hosts/g" \
+          -e "s/DOMAIN/$DOMAIN/g" \
+          -e "s/\([^ ]\)ORG/\1$org/g" \
+          -e "s/WWW_PORT/$www_port/g" \
+          -e "s/CA_PORT/$ca_port/g" \
+          -e "s/PEER0_PORT/$peer0_port/g" \
+          -e "s/PEER0_EVENT_PORT/$peer0_event_port/g" \
+          -e "s/PEER1_PORT/$peer1_port/g" \
+          -e "s/PEER1_EVENT_PORT/$peer1_event_port/g" \
+          -e "s/COUCHDB_PORT/$couchdb_port/g" \
+          ${compose_template} | awk '{gsub(/\[newline\]/, "\n")}1' > ${f}
     else
-    sed -e "s/PEER_EXTRA_HOSTS/$peer_extra_hosts/g" -e "s/CLI_EXTRA_HOSTS/$cli_extra_hosts/g" -e "s/API_EXTRA_HOSTS/$api_extra_hosts/g" -e "s/DOMAIN/$DOMAIN/g" -e "s/\([^ ]\)ORG/\1$org/g" -e "s/API_PORT/$api_port/g" -e "s/PROXY_PORT/$proxy_port/g" -e "s/WWW_PORT/$www_port/g" -e "s/CA_PORT/$ca_port/g" -e "s/PEER0_PORT/$peer0_port/g" -e "s/PEER0_EVENT_PORT/$peer0_event_port/g" -e "s/PEER1_PORT/$peer1_port/g" -e "s/PEER1_EVENT_PORT/$peer1_event_port/g" ${compose_template} | awk '{gsub(/\[newline\]/, "\n")}1' > ${f}
+      sed -e "s/PEER_EXTRA_HOSTS/$peer_extra_hosts/g" \
+          -e "s/CLI_EXTRA_HOSTS/$cli_extra_hosts/g" \
+          -e "s/API_EXTRA_HOSTS/$api_extra_hosts/g" \
+          -e "s/DOMAIN/$DOMAIN/g" \
+          -e "s/\([^ ]\)ORG/\1$org/g" \
+          -e "s/WWW_PORT/$www_port/g" \
+          -e "s/CA_PORT/$ca_port/g" \
+          -e "s/PEER0_PORT/$peer0_port/g" \
+          -e "s/PEER0_EVENT_PORT/$peer0_event_port/g" \
+          -e "s/PEER1_PORT/$peer1_port/g" \
+          -e "s/PEER1_EVENT_PORT/$peer1_event_port/g" \
+          ${compose_template} | awk '{gsub(/\[newline\]/, "\n")}1' > ${f}
     fi
 
     # fabric-ca-server-config yaml
@@ -533,7 +562,7 @@ function logs () {
 
 function clean() {
   removeDockersWithDomain
-  removeUnwantedImages
+  #removeUnwantedImages
 }
 
 function printArgs() {
@@ -665,7 +694,8 @@ elif [ "${MODE}" == "down" ]; then
   done
 
   removeUnwantedContainers
-  removeUnwantedImages
+  #removeUnwantedImages
+  removeDockersWithDomain
 
 elif [ "${MODE}" == "clean" ]; then
   clean
@@ -686,9 +716,10 @@ elif [ "${MODE}" == "generate" ]; then
   setDockerVersions $file_base
   setDockerVersions $file_base_intercept
 
-  generatePeerArtifacts ${ORG1} 4000 8081 7054 7051 7053 7056 7058 81 5984
-  generatePeerArtifacts ${ORG2} 4001 8082 8054 8051 8053 8056 8058 82 6984
-  generatePeerArtifacts ${ORG3} 4002 8083 9054 9051 9053 9056 9058 83 7984
+  #                     org     www_port ca_port peer0_port peer0_event_port peer1_port peer1_event_port couchdb_port
+  generatePeerArtifacts ${ORG1} 4000     7054    7051       7053             7056       7058             5984
+  generatePeerArtifacts ${ORG2} 4001     8054    8051       8053             8056       8058             6984
+  generatePeerArtifacts ${ORG3} 4002     9054    9051       9053             9056       9058             7984
   generateOrdererDockerCompose ${ORG1}
   generateOrdererArtifacts
 

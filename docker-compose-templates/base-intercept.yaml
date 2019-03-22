@@ -23,11 +23,6 @@ services:
       file: base.yaml
       service: api-base
 
-  www-base:
-    extends:
-      file: base.yaml
-      service: www-base
-
   zookeeper:
     extends:
       file: base.yaml

@@ -75,24 +75,6 @@ services:
       - couchdb.ORG.DOMAIN
     PEER_EXTRA_HOSTS
 
-  # fabric-rest api server
-  api.ORG.DOMAIN:
-    extends:
-      file: base-intercept.yaml
-      service: api-base
-    container_name: api.ORG.DOMAIN
-    ports:
-      - API_PORT:4000
-    environment:
-      - ORG=ORG
-      - PORT=4000
- #   volumes:
- #     - ../artifacts/hosts/ORG/api_hosts:/etc/hosts
-    depends_on:
-      - peer0.ORG.DOMAIN
-      - peer1.ORG.DOMAIN
-    API_EXTRA_HOSTS
-
   cli.DOMAIN:
     container_name: cli.DOMAIN
     extends:
@@ -108,7 +90,6 @@ services:
     environment:
       - CORE_PEER_LOCALMSPID=ORGMSP
     volumes:
-    #    - ../artifacts/hosts/ORG/cli_hosts:/etc/hosts
         - ../artifacts/crypto-config/peerOrganizations/ORG.DOMAIN/users/Admin@ORG.DOMAIN:/etc/hyperledger/crypto/peer
     CLI_EXTRA_HOSTS
 
@@ -122,20 +103,22 @@ services:
     volumes:
         - ../artifacts/hosts/ORG/cli_hosts:/etc/hosts
 
-  # simple http server to disseminate certificates
-  www.ORG.DOMAIN:
-    extends:
-      file: base-intercept.yaml
-      service: www-base
-    container_name: www.ORG.DOMAIN
-    ports:
-      - WWW_PORT:80
+  api.ORG.DOMAIN:
+    container_name: api.ORG.DOMAIN
+    image: frag:otc
+    volumes:
+      - ../artifacts/crypto-config:/app/crypto-config
+      - ../artifacts/api-configs-ORG:/app/configs
+    depends_on:
+      - peer0.ORG.DOMAIN
+      - peer1.ORG.DOMAIN
+    API_EXTRA_HOSTS
 
-  proxy.ORG.DOMAIN:
-    container_name: proxy.ORG.DOMAIN
+  www.ORG.DOMAIN:
+    container_name: www.ORG.DOMAIN
     image: nginx
     ports:
-      - PROXY_PORT:80
+      - WWW_PORT:80
     volumes:
       - ../client/build:/usr/share/nginx/html:ro
       - ../artifacts/nginx-ORG.conf:/etc/nginx/conf.d/default.conf:ro

@@ -48,14 +48,6 @@ services:
 #      - ../artifacts/crypto-config/ordererOrganizations/DOMAIN/orderers/orderer.DOMAIN/tls:/etc/hyperledger/crypto/orderer/tls
     CLI_EXTRA_HOSTS
 
-  # simple http server to disseminate certificates
-  www.DOMAIN:
-    extends:
-      file: base-intercept.yaml
-      service: www-base
-    container_name: www.DOMAIN
-    ports:
-      - WWW_PORT:80
       
 #  zookeeper.DOMAIN:
 #    container_name: zookeeper.DOMAIN

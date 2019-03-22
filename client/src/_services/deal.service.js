@@ -1,6 +1,5 @@
 // @flow
 import * as apiService from './api.service';
-import {configService} from './config.service';
 import type {Deal, ListResponse} from '../_types';
 
 export const dealService = {
@@ -24,30 +23,24 @@ const CHANNELS = {
 };
 
 async function getAll(): Promise<ListResponse<Deal>> {
-  const channels = await configService.getChannels();
-  const chaincodes = await configService.getChaincodes();
   return await apiService.query(
-    channels[CHANNELS.common],
-    chaincodes[CHAINCODES.reference],
-    ACTIONS.getAll);
+      CHANNELS.common,
+      CHAINCODES.reference,
+      ACTIONS.getAll);
 }
 
 async function getByPeriod(period: string[]): Promise<ListResponse<Deal>> {
-  const channels = await configService.getChannels();
-  const chaincodes = await configService.getChaincodes();
   return await apiService.query(
-    channels[CHANNELS.common],
-    chaincodes[CHAINCODES.reference],
-    ACTIONS.getByPeriod,
-    period);
+      CHANNELS.common,
+      CHAINCODES.reference,
+      ACTIONS.getByPeriod,
+      period);
 }
 
 async function getForCreatorByPeriod(period: string[]): Promise<ListResponse<Deal>> {
-  const channels = await configService.getChannels();
-  const chaincodes = await configService.getChaincodes();
   return await apiService.query(
-    channels[CHANNELS.common],
-    chaincodes[CHAINCODES.reference],
-    ACTIONS.getForCreatorByPeriod,
-    period);
+      CHANNELS.common,
+      CHAINCODES.reference,
+      ACTIONS.getForCreatorByPeriod,
+      period);
 }

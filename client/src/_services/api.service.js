@@ -18,13 +18,14 @@ export function query(channel: string, chaincode: string, fcn: string, args: any
   const params = {
     peer: `${org}/${_getPeer()}`,
     fcn,
-    args: JSON.stringify(args)
+    args: args.join(",")
   };
 
-  const url = new URL(`${window.location.origin}/channels/${channel}/chaincodes/${chaincode}`);
+  const url = new URL(`${window.location.origin}/api/channels/${channel}/chaincodes/${chaincode}`);
+
   Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
 
-  return sendRequest(`${url.pathname}${url.search}`, requestOptions);
+  return sendRequest(`${url.href}`, requestOptions);
 }
 
 export function invoke(channel: string, chaincode: string, fcn: string, args: any[] = []): * {
@@ -39,7 +40,7 @@ export function invoke(channel: string, chaincode: string, fcn: string, args: an
     })
   };
 
-  return sendRequest(`/channels/${channel}/chaincodes/${chaincode}`, requestOptions);
+  return sendRequest(`/api/channels/${channel}/chaincodes/${chaincode}`, requestOptions);
 }
 
 export function login(user: Object, retry?: boolean = true): Promise<LoginResponse> {
@@ -48,15 +49,7 @@ export function login(user: Object, retry?: boolean = true): Promise<LoginRespon
     body: JSON.stringify({username: user.name, orgName: user.org})
   };
 
-  return sendRequest(`/users`, requestOptions, retry);
-}
-
-export function getChannels(): * {
-  return sendRequest(`/channels?peer=${_getPeer()}`);
-}
-
-export function getChaincodes(): * {
-  return sendRequest(`/chaincodes?peer=${_getPeer()}`);
+  return sendRequest(`/api/users`, requestOptions, retry);
 }
 
 export function extendConfig(): * {
@@ -68,5 +61,5 @@ export function config(): * {
     method: 'GET'
   };
 
-  return sendRequest(`/config`, requestOptions);
+  return sendRequest(`/api/config`, requestOptions);
 }

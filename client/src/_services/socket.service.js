@@ -1,32 +1,25 @@
-import io from 'socket.io-client';
-
-const TRANSACTION_TYPE = 'ENDORSER_TRANSACTION';
-
 export const socketService = {
   subscribe
 };
 
 function subscribe(callback) {
-  let host = window.location.hostname;
-  const PORT = process.env.PORT || 4000;
-  let socket = io.connect(host + ':' + PORT);
+  const socket = new WebSocket(`ws://${window.location.host}/api/notifications`);
 
-  socket.on('connect', function () {
-    console.log('connect socket');
-    socket.emit('listen_channel', {
-      channelId: 'common',
-      fullBlock: true
-    });
-  });
+  socket.onopen = function() {
+    let subscribeMessage = {
+      event: "block",
+      channel: "common"
+    };
 
-  socket.on('chainblock', function (data) {
-    if (checkTransactionType(data.data.data[0].payload.header.channel_header.typeString)) {
+    socket.send(JSON.stringify(subscribeMessage))
+  };
+
+  socket.onmessage = function (event) {
+
+    let eventData = JSON.parse(event.data);
+    console.log(eventData.event_type, eventData.event_type === "block");
+    if(eventData.event_type === "block") {
       callback();
     }
-  });
-
-}
-
-function checkTransactionType(type = '') {
-  return type === TRANSACTION_TYPE;
+  }
 }
