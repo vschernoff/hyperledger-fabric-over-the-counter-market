@@ -1,14 +1,16 @@
-.PHONY: up down generate clear docker
+.PHONY: up down generate clear docker build-client
 
 help:
 	@echo "OTC Demo"
 	@echo ""
-	@echo "generate: generate required certificates and genesis block"
+	@echo "generate: generate artifacts with crypto material, configs and dockercompose templates"
 	@echo "up: bring up the network"
 	@echo "down: clear the network"
+	@echo "clear: clear generated artifacts"
+	@echo "build-client: build web client (building occurs inside docker container, no Node dependency)"
 	@echo ""
 
-generate:
+generate: build-client
 	./scripts/docker-frag-otc.sh
 	./network.sh -m generate
 
@@ -18,5 +20,9 @@ up:
 down:
 	./network.sh -m down
 
-clean:
+clear:
 	./network.sh -m clean
+
+build-client:
+	./scripts/build-client.sh
+
