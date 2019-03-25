@@ -4,9 +4,10 @@ help:
 	@echo "OTC Demo"
 	@echo ""
 	@echo "generate: generate artifacts with crypto material, configs and dockercompose templates"
+	@echo "          build docker Fabric Rest API Go container and web client."
 	@echo "up: bring up the network"
 	@echo "down: clear the network"
-	@echo "clear: clear generated artifacts"
+	@echo "clear: remove docker containers and volumes"
 	@echo "build-client: build web client (building occurs inside docker container, no Node dependency)"
 	@echo ""
 

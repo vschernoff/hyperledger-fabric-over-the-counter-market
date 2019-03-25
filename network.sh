@@ -195,32 +195,6 @@ function generateOrdererDockerCompose() {
     setDockerVersions $f
 }
 
-function generateNetworkConfig() {
-  orgs=${@}
-
-  echo "Generating network-config.json for $orgs, ${orgs[0]}"
-
-  networkConfigTemplate=$TEMPLATES_ARTIFACTS_FOLDER/network-config-template.json
-  if [ -f ./$artifactsTemplatesFolder/network-config-template.json ]; then
-    networkConfigTemplate=./$artifactsTemplatesFolder/network-config-template.json
-  fi
-
-  # replace for orderer in network-config.json
-  # TODO: replace ORG1.
-  out=`sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG1/${orgs[0]}/g" -e "s/DEV_DEPLOYMENT/$DEV_DEPLOYMENT/g" -e "s/^\s*\/\/.*$//g" $networkConfigTemplate`
-  placeholder=",}}"
-
-  for org in ${orgs}
-    do
-      snippet=`sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG/$org/g" $TEMPLATES_ARTIFACTS_FOLDER/network-config-orgsnippet.json`
-      out="${out//$placeholder/,$snippet}"
-    done
-
-  out="${out//$placeholder/\}\}}"
-
-  echo ${out} > $GENERATED_ARTIFACTS_FOLDER/network-config.json
-}
-
 function generateOrdererArtifacts() {
     org=$1
 
@@ -232,16 +206,12 @@ function generateOrdererArtifacts() {
 
 
     if [[ -n "$org" ]]; then
-        generateNetworkConfig ${org}
         sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG1/$org/g" "$TEMPLATES_ARTIFACTS_FOLDER/configtxtemplate-oneOrg-orderer.yaml" > $GENERATED_ARTIFACTS_FOLDER/configtx.yaml
-        createChannels=("common")
     else
-        generateNetworkConfig ${ORG1} ${ORG2} ${ORG3}
         # replace in configtx
         sed -e "s/DOMAIN/$DOMAIN/g" -e "s/ORG1/$ORG1/g" -e "s/ORG2/$ORG2/g" -e "s/ORG3/$ORG3/g" $TEMPLATES_ARTIFACTS_FOLDER/configtxtemplate.yaml > $GENERATED_ARTIFACTS_FOLDER/configtx.yaml
-        createChannels=("common")
     fi
-
+    createChannels=("common")
 
     for channel_name in ${createChannels[@]}
     do
