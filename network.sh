@@ -3,8 +3,8 @@
 starttime=$(date +%s)
 
 # defaults; export these variables before executing this script
-composeTemplatesFolder="docker-compose-templates"
-artifactsTemplatesFolder="artifact-templates"
+composeTemplatesFolder="dockercompose-templates"
+artifactsTemplatesFolder="artifacts-templates"
 : ${FABRIC_STARTER_HOME:=$PWD}
 : ${TEMPLATES_ARTIFACTS_FOLDER:=$FABRIC_STARTER_HOME/$artifactsTemplatesFolder}
 : ${TEMPLATES_DOCKER_COMPOSE_FOLDER:=$FABRIC_STARTER_HOME/$composeTemplatesFolder}
