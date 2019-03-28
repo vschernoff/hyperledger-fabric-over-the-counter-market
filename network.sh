@@ -309,15 +309,6 @@ function generatePeerArtifacts() {
         -e "s/API_PORT/${DEFAULT_API_PORT}/g" \
         $TEMPLATES_ARTIFACTS_FOLDER/nginx.conf > $GENERATED_ARTIFACTS_FOLDER/"nginx-$org.conf"
 
-    # API configs
-    mkdir ${GENERATED_ARTIFACTS_FOLDER}/api-configs-${org}
-    sed -e "s/DOMAIN/$DOMAIN/g" \
-        -e "s/ORG/$org/g" \
-        $TEMPLATES_ARTIFACTS_FOLDER/api-configs/api.yaml > ${GENERATED_ARTIFACTS_FOLDER}/api-configs-${org}/api.yaml
-    sed -e "s/DOMAIN/$DOMAIN/g" \
-        -e "s/ORG/$org/g" \
-        $TEMPLATES_ARTIFACTS_FOLDER/api-configs/network.yaml > ${GENERATED_ARTIFACTS_FOLDER}/api-configs-${org}/network.yaml
-
     # docker-compose yaml
     if [ "${STATE_DATABASE}" == "couchdb" ]; then
       sed -e "s/PEER_EXTRA_HOSTS/$peer_extra_hosts/g" \

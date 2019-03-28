@@ -13,6 +13,7 @@ help:
 
 generate: build-client
 	./scripts/docker-frag-otc.sh
+	./bin/fng generate api
 	./network.sh -m generate
 
 up:

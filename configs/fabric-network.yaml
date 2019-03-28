@@ -1,0 +1,7 @@
+orgs:
+  a:
+  b:
+  c:
+channels:
+  common:
+    orgs: [a, b, c]

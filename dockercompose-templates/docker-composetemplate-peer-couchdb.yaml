@@ -108,7 +108,7 @@ services:
     image: frag:otc
     volumes:
       - ../artifacts/crypto-config:/app/crypto-config
-      - ../artifacts/api-configs-ORG:/app/configs
+      - ../generated/ORG/api-configs:/app/configs
     depends_on:
       - peer0.ORG.DOMAIN
       - peer1.ORG.DOMAIN
