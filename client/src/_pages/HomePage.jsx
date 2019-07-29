@@ -12,7 +12,14 @@ class HomePage extends React.Component {
   constructor(props) {
     super(props);
 
+  }
+
+  componentDidMount() {
     socketService.subscribe(() => this.refreshData());
+  }
+
+  componentWillUnmount() {
+    socketService.unsubscribe();
   }
 
   componentDidUpdate(prevProps) {

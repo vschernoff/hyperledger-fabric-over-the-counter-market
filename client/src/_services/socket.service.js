@@ -1,25 +1,34 @@
 export const socketService = {
-  subscribe
+  subscribe,
+  unsubscribe
 };
+let socket;
 
 function subscribe(callback) {
-  const socket = new WebSocket(`ws://${window.location.host}/api/notifications`);
+  const reference_CHAIN_CHAINCODE = 'reference';
 
-  socket.onopen = function() {
-    let subscribeMessage = {
-      event: "block",
-      channel: "common"
-    };
+  socket = new WebSocket(`ws://${window.location.host}/api/notifications`);
 
-    socket.send(JSON.stringify(subscribeMessage))
+  const subscribeMessage = chaincode => JSON.stringify({
+    event: 'block',
+    channel: 'common',
+    cc_event: 'cc_event',
+    chaincode
+  });
+
+  socket.onopen = function () {
+    socket.send(subscribeMessage(reference_CHAIN_CHAINCODE));
   };
 
   socket.onmessage = function (event) {
-
     let eventData = JSON.parse(event.data);
     console.log(eventData.event_type, eventData.event_type === "block");
-    if(eventData.event_type === "block") {
+    if (eventData.event_type === "block") {
       callback();
     }
   }
+}
+
+function unsubscribe() {
+  socket.close();
 }

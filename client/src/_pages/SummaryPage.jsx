@@ -12,11 +12,15 @@ class SummaryPage extends React.Component {
     super();
 
     this.refreshData = this.refreshData.bind(this);
-    socketService.subscribe(() => this.refreshData());
   }
 
   componentDidMount() {
     this.refreshData();
+    socketService.subscribe(() => this.refreshData());
+  }
+
+  componentWillUnmount() {
+    socketService.unsubscribe();
   }
 
   componentDidUpdate(prevProps) {
@@ -46,7 +50,7 @@ class SummaryPage extends React.Component {
     }, 0);
 
     const netted = data.reduce((acc, rec) => {
-      const val = (rec.value.amount/365*rec.value.rate);
+      const val = (rec.value.amount / 365 * rec.value.rate);
       return acc + (rec.value.lender === user.org ? val : -val)
     }, 0);
 
@@ -85,16 +89,16 @@ class SummaryPage extends React.Component {
     const interestColumns = [{
       Header: 'Receivable, ' + commonConstants.CURRENCY_SIGN,
       id: 'cashOut',
-      accessor: rec => rec.value.lender === user.org ? formatter.number(rec.value.amount/365*rec.value.rate) : '',
+      accessor: rec => rec.value.lender === user.org ? formatter.number(rec.value.amount / 365 * rec.value.rate) : '',
       Footer: (
-        formatter.number(data.reduce((acc, rec) => acc + (rec.value.lender === user.org ? (rec.value.amount/365*rec.value.rate) : 0), 0))
+        formatter.number(data.reduce((acc, rec) => acc + (rec.value.lender === user.org ? (rec.value.amount / 365 * rec.value.rate) : 0), 0))
       )
     }, {
       Header: 'Payable, ' + commonConstants.CURRENCY_SIGN,
       id: 'cashIn',
-      accessor: rec => rec.value.borrower === user.org ? formatter.number(rec.value.amount/365*rec.value.rate) : '',
+      accessor: rec => rec.value.borrower === user.org ? formatter.number(rec.value.amount / 365 * rec.value.rate) : '',
       Footer: (
-        formatter.number(data.reduce((acc, rec) => acc + (rec.value.borrower === user.org ? (rec.value.amount/365*rec.value.rate) : 0), 0))
+        formatter.number(data.reduce((acc, rec) => acc + (rec.value.borrower === user.org ? (rec.value.amount / 365 * rec.value.rate) : 0), 0))
       )
     }, {
       Header: 'Counterparty',

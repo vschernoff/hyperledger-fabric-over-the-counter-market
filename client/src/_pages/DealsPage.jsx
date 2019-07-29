@@ -73,8 +73,16 @@ class DealsPage extends React.Component {
   constructor(props) {
     super(props);
 
+  }
+
+  componentDidMount() {
     socketService.subscribe(() => this.refreshData());
   }
+
+  componentWillUnmount() {
+    socketService.unsubscribe();
+  }
+
 
   handleSubmit(params, event = null) {
     event || event.preventDefault();
