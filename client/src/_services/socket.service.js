@@ -3,6 +3,7 @@ export const socketService = {
   unsubscribe
 };
 let socket;
+let intervalID;
 
 function subscribe(callback) {
   const reference_CHAIN_CHAINCODE = 'reference';
@@ -16,8 +17,15 @@ function subscribe(callback) {
     chaincode
   });
 
+  const heartbeat = () => {
+    intervalID = setInterval(() => {
+      socket.send(JSON.stringify('ping'));
+    }, 10000);
+  };
+
   socket.onopen = function () {
     socket.send(subscribeMessage(reference_CHAIN_CHAINCODE));
+    heartbeat();
   };
 
   socket.onmessage = function (event) {
@@ -31,4 +39,5 @@ function subscribe(callback) {
 
 function unsubscribe() {
   socket.close();
+  intervalID && clearInterval(intervalID);
 }
